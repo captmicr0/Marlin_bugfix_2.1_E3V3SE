@@ -17,6 +17,7 @@
     "Marlin/src/gcode/feature/pause/M600.cpp",
     "Marlin/src/gcode/gcode.cpp",
     "Marlin/src/gcode/gcode.h",
+    "Marlin/src/gcode/host/M115.cpp",
     "Marlin/src/gcode/lcd/M117.cpp",
     "Marlin/src/gcode/lcd/M255.cpp",
     "Marlin/src/gcode/lcd/M256.cpp",
@@ -47,7 +48,7 @@
   ],
   "build": {
     "STM32F103RET6_creality": {
-      "flash": 233980,
+      "flash": 235188,
       "ram": 29224
     }
   }
