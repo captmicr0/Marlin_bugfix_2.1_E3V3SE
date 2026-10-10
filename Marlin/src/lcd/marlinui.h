@@ -363,6 +363,11 @@ public:
       FORCE_INLINE static void set_current_layer(const uint16_t layer) { current_layer = layer; }
       FORCE_INLINE static uint16_t get_current_layer() { return current_layer; }
     #endif
+    #if ALL(DWIN_RENDER_THUMBNAIL, OCTOPRINT_PLUGIN)
+      static uint32_t print_time;
+      FORCE_INLINE static void set_print_time(const uint32_t t) { print_time = t; }
+      FORCE_INLINE static uint32_t get_print_time() { return print_time; }
+    #endif
     
     #if ENABLED(SET_PROGRESS_PERCENT)
       static progress_t progress_override;

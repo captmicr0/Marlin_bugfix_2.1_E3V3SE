@@ -26,6 +26,7 @@
 
 #include "../gcode.h"
 #include "../queue.h"           // for getting the command port
+#include "../../e3v3se/OctoHost.h"
 
 #if ENABLED(M115_GEOMETRY_REPORT)
   #include "../../module/motion.h"
@@ -64,6 +65,8 @@
  *       at https://reprap.org/wiki/Firmware_Capabilities_Protocol
  */
 void GcodeSuite::M115() {
+
+  TERN_(OCTOPRINT_PLUGIN, serial_connection_active = true);
 
   // Hosts should match one of these
   #define MACHINE_KINEMATICS "" \

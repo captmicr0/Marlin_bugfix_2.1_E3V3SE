@@ -77,6 +77,7 @@
 #endif
 
 #include "../libs/nozzle.h"
+#include "../e3v3se/OctoHost.h"
 #include "pause.h"
 
 #define DEBUG_OUT ENABLED(DEBUG_PAUSE_RESUME)
@@ -303,7 +304,6 @@ bool load_filament(const float slow_load_length/*=0*/, const float fast_load_len
     //   // Keep looping if "Purge More" was selected
     // } while (TERN0(M600_PURGE_MORE_RESUMABLE, pause_menu_response == PAUSE_RESPONSE_EXTRUDE_MORE));
 
-    bool serial_connection_active = false;
     if(serial_connection_active){
       do {
         if (purge_length > 0) {

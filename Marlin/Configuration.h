@@ -134,6 +134,7 @@
 // Choose your own or use a service like https://www.uuidgenerator.net/version4
 //#define MACHINE_UUID "00000000-0000-0000-0000-000000000000"
 #define DWIN_RENDER_THUMBNAIL  // Enable the Rendering of the Thumbnail Image from Gcode Script for E3V3SE
+#define OCTOPRINT_PLUGIN       // Octoprint-LCD_E3V3SE plugin support (M9000/M9001, host prompts). Host profile only.
 
 
 // |                |

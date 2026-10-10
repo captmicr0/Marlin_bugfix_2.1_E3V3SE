@@ -813,6 +813,22 @@ void Popup_Window_Leveling();
 
 void Goto_PrintProcess();
 void Goto_MainMenu();
+#if ENABLED(DWIN_RENDER_THUMBNAIL)
+  void Goto_ThumbPrint();
+#endif
+
+#if ENABLED(OCTOPRINT_PLUGIN)
+  void Goto_ThumbFinish();
+  void DWIN_OctoUpdate();
+  void Clear_Thumb_UpperArea();
+  #define OctoIMAGE_WIDTH 96
+  extern uint16_t OctoImageLine[OctoIMAGE_WIDTH];
+  extern char title[50];
+  void Draw_OctoTitle(const char *const title);
+  void DWIN_RenderOctoTitle();
+  void initializeImageMap();
+  void DWIN_RenderOctoLine(uint16_t y);
+#endif
 void Goto_FilePreview();
 
 // Variable control
