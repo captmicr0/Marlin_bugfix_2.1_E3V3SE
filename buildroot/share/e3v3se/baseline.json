@@ -1,5 +1,6 @@
 {
   "boundary_files": [
+    ".gitignore",
     "Marlin/Configuration.h",
     "Marlin/Configuration_adv.h",
     "Marlin/src/MarlinCore.cpp",
