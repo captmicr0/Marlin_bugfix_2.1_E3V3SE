@@ -72,26 +72,74 @@ void GcodeSuite::M9000() {
 
   if (parser.seen('N')) copy_title(title, sizeof(title), parser.string_arg);
 
-  if (parser.boolval('S')) Goto_ThumbPrint();
+  if (parser.boolval('S')) {
+    Clear_Thumb_UpperArea();
+    Clear_Title_Bar();
+    Goto_ThumbPrint();
+    if (title[0]) Draw_OctoTitle(title);
+  }
+  else if (parser.boolval('F'))
+    Goto_ThumbFinish();
+}
+
+static uint8_t hex2val(const char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+  if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+  return 0;
+}
+
+static void skip_spaces(const char *&p) { while (*p == ' ' || *p == '\t') ++p; }
+
+static uint16_t parse_u16(const char *&p) {
+  uint16_t v = 0;
+  while (*p >= '0' && *p <= '9') v = v * 10 + (*p++ - '0');
+  return v;
 }
 
 /**
- * M9001: Plugin thumbnail transfer (START / C <line> <offset> <hex> / END)
- *
- * Only the handshake is implemented here; the pixel data is accepted and dropped
- * until the DWIN renderer for plugin thumbnails is ported.
+ * M9001: Plugin thumbnail transfer
+ *  START                    Reset the line buffer
+ *  C <line> <offset> <hex>  RGB565 pixels (4 hex digits each); the line renders once all 96 pixels are in
+ *  END                      Finish and acknowledge
  */
 void GcodeSuite::M9001() {
   const char *p = parser.command_ptr;
   if (!p) return;
 
   while (*p && *p != ' ') ++p;
-  while (*p == ' ') ++p;
+  skip_spaces(p);
+  if (!*p) return;
 
-  if (!strncmp(p, "START", 5)) SERIAL_ECHOLNPGM("M9001 START");
+  if (!strncmp(p, "START", 5)) {
+    initializeImageMap();
+    SERIAL_ECHOLNPGM("M9001 START");
+    Clear_Title_Bar();
+    Draw_OctoTitle(" Receiving thumbnail, wait...");
+  }
   else if (!strncmp(p, "END", 3)) {
     SERIAL_ECHOLNPGM("M9001 END");
     SERIAL_ECHOLNPGM("M9001 thumbnail-rendered");
+    Clear_Title_Bar();
+    Draw_OctoTitle(title);
+  }
+  else if (*p == 'C') {
+    ++p; skip_spaces(p);
+    const uint16_t line_number = parse_u16(p);
+    skip_spaces(p);
+    uint16_t pixel_offset = parse_u16(p);
+    skip_spaces(p);
+
+    const uint16_t start_offset = pixel_offset;
+    uint16_t decoded = 0;
+    while (pixel_offset < OctoIMAGE_WIDTH && p[0] && p[1] && p[2] && p[3]) {
+      OctoImageLine[pixel_offset++] = (uint16_t(hex2val(p[0])) << 12) | (uint16_t(hex2val(p[1])) << 8)
+                                    | (uint16_t(hex2val(p[2])) << 4)  |  uint16_t(hex2val(p[3]));
+      ++decoded;
+      p += 4;
+    }
+
+    if (start_offset + decoded >= OctoIMAGE_WIDTH) DWIN_RenderOctoLine(line_number);
   }
 }
 

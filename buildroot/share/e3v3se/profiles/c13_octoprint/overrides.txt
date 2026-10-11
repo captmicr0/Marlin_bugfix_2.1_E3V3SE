@@ -232,4 +232,5 @@ Configuration_adv.h E CHOPPER_TIMING_Y USER_Y_24V
 Configuration_adv.h E CHOPPER_TIMING_Z USER_Z_24V
 Configuration_adv.h E CHOPPER_TIMING_E CHOPPER_DEFAULT_24V
 Configuration_adv.h E HYBRID_THRESHOLD
+Configuration_adv.h E MEATPACK_ON_SERIAL_PORT_1
 Configuration_adv.h D FREEZE_JERK
