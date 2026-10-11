@@ -1,617 +1,242 @@
-<p align="center">
-  <img src="./media/shore.png" alt="Marlin 2.1.x for Ender-3 V3 SE" width="65%">
-</p>
+# Marlin for the Creality Ender-3 V3 SE
 
-<p align="center">
-  <a href="https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE">
-    <img src="https://img.shields.io/badge/Firmware-Marlin%202.1.x-blue?style=for-the-badge" alt="Marlin 2.1.x">
-  </a>
-  <img src="https://img.shields.io/badge/Printer-Ender%203%20V3%20SE-orange?style=for-the-badge" alt="Ender 3 V3 SE">
-  <img src="https://img.shields.io/badge/Profile-Custom%20Tuned-success?style=for-the-badge" alt="Custom tuned profile">
-</p>
+An upstream-first Marlin 2.1.x bugfix fork for the **Creality Ender-3 V3 SE**.
 
-This version of Firmware uses the Marlin Bugfix 2.1.x Branch to bring all the goodies of the updated version into the Ender 3 V3 SE.
+The goal of this repository is simple: **pull upstream Marlin at any time without regressions**. All fork-specific behavior is isolated behind a small, auditable boundary, and the machine configuration is generated from pristine upstream files plus a reviewed profile.
 
-I have ported many of the features and fixes from the community stock version in the old repo: https://github.com/navaismo/Ender-3V3-SE. It may look we have the same but at the core is different.
+> Status: C13 (STM32F103RE) SD-card and OctoPrint profiles are working and verified on hardware. C14 (STM32F401) is the next migration step.
 
 ## Table of Contents
-- [Modular](#modular)
-- [Which Branch to choose](#which-branch-to-choose)
-- [Installation](#installation)
-- [Features](#features)
-  - [Thumbnail](#-thumbnail)
-  - [ONE CLICK PRINT](#-one-click-print)
-  - [Enhanced Z Offset Calculation](#-enhanced-z-offset-calculation)
-    - [X Routine](#x-routine)
-    - [Delta Routine](#delta-routine)
-  - [Leveling Menu](#-leveling-menu)
-  - [Skew Correction Menu](#-skew-correction-menu)
-- [Ported Features](#ported-features)
-  - [Filament Runout Sensor](#-filament-runout-sensor)
-  - [Fixed M600 for Hosts Commands](#-fixed-m600-for-host-commands)
-  - [Host Commands Support](#-host-commands-support)
-  - [Eduard's Compact Grid](#-compact-6x6-grid)
-  - [Input Shaping](#-input-shaping)
-  - [LCD Dimm & Brightness Menu](#-lcd-dimm--brightness-menu)
-  - [Mute Buzzer](#-mute-buzzer)
-  - [CRTouch Test Functions](#-crtouch-test-functions)
-  - [Z Height after Homing](#-z-height-after-homing)
-  - [Extra Preheat Labels](#-extra-preheat-labels)
-  - [Custom Extrude Menu](#-custom-extrude-menu)
-  - [Linear Advance](#-linear-advance)
-  - [Increased Temperature for BED and Noozle](#-increased-temperature-for-bed-and-noozle)
-- [Explore New Features](#explore-new-features)
-  - [FT_Motion](#-ft_motion-which-enables-different-filters-of-shapers-for-the-machine-like-klipper-does)
-  - [Axis Twist Compensation](#-axis-twist-compensation)
 
+- [Why this architecture](#why-this-architecture)
+- [Branches](#branches)
+- [Project structure](#project-structure)
+- [Configuration profiles](#configuration-profiles)
+- [Enabling and disabling features by hand](#enabling-and-disabling-features-by-hand)
+- [Guardrails](#guardrails)
+- [Merging upstream](#merging-upstream)
+- [Host (OctoPrint) integration](#host-octoprint-integration)
+- [Building](#building)
+- [Memory budget](#memory-budget)
+- [Further documentation](#further-documentation)
+- [Marlin upstream README](#marlin-3d-printer-firmware)
 
-## Modular
+## Why this architecture
 
-<div align="left"  >
+Previous versions of this fork edited upstream files directly (the DWIN UI, headers, `Configuration*.h`). Every upstream merge then produced conflicts and silent regressions. The current design follows three rules:
 
-  <img src="./media/puzzle2.png" width="40%" height="40%"/>
+1. **Upstream owns the core.** Files outside the fork-owned paths stay as close to upstream as possible. Where a hook is unavoidable, it is a few lines that call into fork code.
+2. **Fork code lives in fork-owned paths.** Custom features are implemented in `Marlin/src/e3v3se/` and `Marlin/src/lcd/dwin/creality/` and are compiled through the PlatformIO source filter.
+3. **Configuration is derived, not hand-merged.** `Configuration.h` and `Configuration_adv.h` equal pristine upstream plus a profile (define overrides and small residual patches).
 
-</div>  
+### How the pieces fit together
 
-<br>
+```mermaid
+flowchart TB
+    subgraph UP["Upstream Marlin (bugfix-2.1.x) - merged as-is"]
+        UCFG["Configuration.h / Configuration_adv.h<br/>(pristine)"]
+        UCORE["Core: gcode, planner, stepper,<br/>temperature, pause, settings"]
+        UHAL["HAL / pins / sanity checks"]
+    end
 
-From now on the Firmware will be modular, meaning that you must choose which components want to have considering the limit of the memory which must be RAM less than 40% and Flash less than 46%.
+    subgraph PROF["Config profile (buildroot/share/e3v3se/profiles)"]
+        OVR["overrides.txt<br/>define states"]
+        RES["residual.*.patch<br/>fork-only options"]
+    end
 
+    subgraph FORK["Fork-owned code"]
+        E3["Marlin/src/e3v3se/<br/>AutoOffset, ThumbRender, OctoHost"]
+        DWIN["Marlin/src/lcd/dwin/creality/<br/>DWIN UI for the V3 SE"]
+    end
 
+    subgraph GUARD["Guardrails (check_profile.py)"]
+        GB["boundary: upstream-file edits must not grow"]
+        GC["config: files = upstream + profile"]
+        GS["build: RAM / flash baseline"]
+    end
 
-## Which branch to choose
-The below Table gives you the branches for specific use, only SD card support or Hosts Support along the hardware C13 or C14.
+    UCFG --> APPLY(["config_profile.py apply / derive"])
+    OVR --> APPLY
+    RES --> APPLY
+    APPLY --> CFG["Machine Configuration*.h"]
 
-<table border="1" cellspacing="0" cellpadding="10" width="100%">
-  <thead>
-    <tr>
-      <th align="center" width="50%">Board CR4NS200320C13 (HW C13)</th>
-      <th align="center" width="50%">Board CR4NS200320C14 (HW C14)</th>
-    </tr>
-  </thead>
+    CFG --> BUILD(["PlatformIO build<br/>source filter in platformio.ini"])
+    UCORE -- "few-line hooks" --> E3
+    UCORE -- "hooks" --> DWIN
+    UCORE --> BUILD
+    UHAL --> BUILD
+    E3 --> BUILD
+    DWIN --> BUILD
+    BUILD --> FW["Firmware (C13 SD / C13 OctoPrint)"]
 
-  <tbody>
-    <tr>
-      <td valign="top">
-
-#### ONLY SD CARD
-This branch is focused to work only printing from SD Card the host support is limited.
-
-- Branch: [**for_E3V3SE**](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/tree/for_E3V3SE)
-  - Release tag: [krasnaya_4](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/releases/tag/Krasnaya_4)
-
-- The Binary provided will contain just the following features:
-
-  * [D ROUTINE AUTO Z OFFSET](#delta-routine).
-  * [DWIN RENDER THUMBNAIL](#-thumbnail).
-  * [ONE CLICK PRINT](#-one-click-print)
-  * [INPUT SHAPING](#-input-shaping).
-  * [LINEAR ADVANCE](#-linear-advance).
-  * [Mcodes for LCD Dimm & Brightness](#-lcd-dimm-&-brightness-menu).
-  * [Mute or Unmute Buzzer](#-mute-buzzer).
-  * [CRTouch test functions](#-crtouch-test-functions).
-  * [Eduard's Compact Grid](#-compact-6x6-grid)
-  * [Filament Runout Sensor](#-filament-runout-sensor)
-  * [Fixed M600](#-fixed-m600-for-hosts-commands)
-
-  With a Memory cost of:
-
-``` c++
-Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
-RAM:   [===       ]  31.7% (used 20788 bytes from 65536 bytes)
-Flash: [====      ]  44.8% (used 221924 bytes from 495616 bytes)
-``` 
-
-  </td>
-  <td valign="top">
-
-#### ONLY SD CARD
-This branch is focused to work only printing from SD Card the host support is limited.
-
-- Branch: [**for_STM32F401**](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/tree/for_STM32F401)
-  - Release tag: [krasnaya_4_F401](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/releases/tag/Krasnaya_4_F401)
-
-- The Binary provided will contain just the following features:
-
-  * [D ROUTINE AUTO Z OFFSET](#delta-routine).
-  * [DWIN RENDER THUMBNAIL](#-thumbnail).
-  * [ONE CLICK PRINT](#-one-click-print)
-  * [INPUT SHAPING](#-input-shaping).
-  * [LINEAR ADVANCE](#-linear-advance).
-  * [Mcodes for LCD Dimm & Brightness](#-lcd-dimm-&-brightness-menu).
-  * [Mute or Unmute Buzzer](#-mute-buzzer).
-  * [CRTouch test functions](#-crtouch-test-functions).
-  * [Eduard's Compact Grid](#-compact-6x6-grid)
-  * [Filament Runout Sensor](#-filament-runout-sensor)
-  * [Fixed M600](#-fixed-m600-for-hosts-commands)
-
-  With a Memory cost of:
-
-``` c++
-Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
-RAM:   [===       ]  31.3% (used 20540 bytes from 65536 bytes)
-Flash: [====      ]  42.8% (used 220244 bytes from 514288 bytes)
-``` 
-
-
-  <tr>
-  <td valign="top">
-
-#### OctoPrint (or Serial Host)
-This branch is focused to work with host support like Octoprint and has features to support serial commands.
-
-- Branch: [**for_Octoprint**](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/tree/for_Octoprint)
-  - Release tag: [Belaya_6](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/releases/tag/Belaya_6)
-
-- The Binary provided will contain just the following features:
-
-  * [D ROUTINE AUTO Z OFFSET](#delta-routine).
-  * [DWIN RENDER THUMBNAIL](#-thumbnail).
-  * [ONE CLICK PRINT](#-one-click-print)
-  * [FT_MOTION](#-ft_motion).
-  * [MeatPack Enabled](https://plugins.octoprint.org/plugins/meatpack/).
-  * [LINEAR ADVANCE](#-linear-advance).
-  * [Mcodes for LCD Dimm & Brightness](#-lcd-dimm-&-brightness-menu).
-  * [Mute or Unmute Buzzer](#-mute-buzzer).
-  * [CRTouch test functions](#-crtouch-test-functions).
-  * [Eduard's Compact Grid](#-compact-6x6-grid)
-  * [Filament Runout Sensor](#-filament-runout-sensor)
-  * [Fixed M600](#-fixed-m600-for-hosts-commands)
-  * [Host Command support](#-host-commands-support)
-  * Baud rate of 115200.
-
-With a Memory cost of:
-
-``` c++
-Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
-RAM:   [===       ]  31.8% (used 20856 bytes from 65536 bytes)
-Flash: [=====     ]  47.9% (used 237512 bytes from 495616 bytes)
-``` 
-
-
-  </td>
-  <td valign="top">
-
-#### OctoPrint (or Serial Host)
-This branch is focused to work with host support like Octoprint and has features to support serial commands.
-
-- Branch: [**for_Octoprint_F401**](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/tree/for_Octoprint_F401)
-  - Release tag: [Belaya_4_F401](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/releases/tag/Belaya_4_F401)
-
-- The Binary provided will contain just the following features:
-
-  * [D ROUTINE AUTO Z OFFSET](#delta-routine).
-  * [DWIN RENDER THUMBNAIL](#-thumbnail).
-  * [ONE CLICK PRINT](#-one-click-print)
-  * [FT_MOTION](#-ft_motion).
-  * [MeatPack Enabled](https://plugins.octoprint.org/plugins/meatpack/).
-  * [LINEAR ADVANCE](#-linear-advance).
-  * [Mcodes for LCD Dimm & Brightness](#-lcd-dimm-&-brightness-menu).
-  * [Mute or Unmute Buzzer](#-mute-buzzer).
-  * [CRTouch test functions](#-crtouch-test-functions).
-  * [Eduard's Compact Grid](#-compact-6x6-grid)
-  * [Filament Runout Sensor](#-filament-runout-sensor)
-  * [Fixed M600](#-fixed-m600-for-hosts-commands)
-  * [Host Command support](#-host-commands-support)
-  * Baud rate of 115200.
-
-With a Memory cost of:
-
-``` c++
-Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
-RAM:   [===       ]  31.4% (used 20604 bytes from 65536 bytes)
-Flash: [=====     ]  45.6% (used 234484 bytes from 514288 bytes)
-``` 
-
-
-
-  </td>
-  </tr>
-  </tbody>
-</table>
-
-
-
-## Installation
-
-> [!TIP]
-> 
-> Follow the [Wiki Article to Flash Firmware](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/wiki/Flashing-your-Printer).
->
-
-It is recommended to create your own Binary with your desired features, using either the configuration files, the Marlin autobuild VSCode extension or Follow the [Wiki Article to compile the firmware using Github Actions](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/wiki/Compiling-the-Firmware-using-Github-Actions).
-
-> [!IMPORTANT]
-> 
-> 1) For this version is important that you check the e-Steps of your extruder before start a print job.
-> in my case old firmware had **424.9** as value for a normal extrusion but for Marlin 2.1 needed to adjust to **715.12** So please calibrate it after the Z offset calculation finished.
->
->
-> 2) Also calibrate the PID for both Nozzle and Bed, go to Control->Temperature->Auto PID.
-> Select the usual temperature of your jobs and start from the LCD menu the test. Auto PID is important to avoid the temperature fluctuation/bouncing.
->
-> 3) Take a look on the Wiki and the Issues pages, most probably your question has been answered.
->
->
-
-
-
-## Features
-
-### * Thumbnail
-
-<div align="left" >
-
-<img src="./media/PrintPage.gif" width="55%" height="55%"/>
-
-
-</div>  
-
-A new feature is available to Render the Thumbnail of the Gcode file, this time you dont need Octoprint it can be donde from the SD, but you need patience.
-```c++
-#define DWIN_RENDER_THUMBNAIL  // Enable the Rendering of the Thumbnail Image from Gcode Script for E3V3SE
-
+    GB -. checks .-> UCORE
+    GC -. checks .-> CFG
+    GS -. checks .-> FW
 ```
 
-> [!TIP]
-> 
-> Follow the [Wiki Article to enable the Thumbnail](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/wiki/OrcaSlicer-Thumbnail-Setup).
->
+Upstream code flows in untouched, the machine configuration is generated from it, and all fork behavior enters through a small number of hooks into fork-owned folders. The guardrails verify each of those three boundaries on every change.
 
-<br>
+## Branches
 
-### * One Click Print
+| Branch | Hardware | Purpose |
+| --- | --- | --- |
+| `c13_sd` | C13 (STM32F103RE), SD card | Main line. Mirror of the former `architecture/e3v3se-upstream-seams`. |
+| `c13_octoprint` | C13, serial host (OctoPrint) | `c13_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol. |
+| `for_E3V3SE`, `for_Octoprint` | C13 | Legacy branches, kept for reference. |
+| `for_STM32F401`, `for_Octoprint_F401` | C14 (STM32F401) | Legacy branches, pending migration to the profile system. |
 
-<div align="left" >
+Each branch carries its own copy of the documentation, so notes follow the code they describe.
 
-<img src="./media/OCP.gif" width="55%" height="55%"/>
-
-
-</div>  
-
-A new feature is available, when you insert the SD Card automatically will search the latest file and ask if you want to print it now!
-```c++
-#define ONE_CLICK_PRINT  // Prompt to print the newest file on inserted media
+## Project structure
 
 ```
-
-<br>
-
-### * Enhanced Z Offset Calculation.
-
-For this version you can Enable 2 routines to calculate the Z offset based on 5 or 4 points of the BED.
-
-#### X Routine
-
-<div align="left" >
-
-  <img src="https://github.com/user-attachments/assets/f6977688-94e3-4438-b58a-fdf8a378cf0a" width="40%" height="40%"/>
-
-</div>  
-
-Enable in configuration.h
-```c++
-#define X_ROUTINE_AUTO_OFFSET  // Enable this to calculate the Z offset automatically using the 5 points of the bed, (X) pattern
+Marlin/
+  Configuration.h, Configuration_adv.h   Derived from upstream + active profile
+  src/
+    e3v3se/                              Fork-owned features (isolated from upstream)
+      AutoOffset.*, G212.cpp, M8015.cpp    Automatic Z-offset (load cell / CRTouch)
+      ThumbRender.cpp                      G-code thumbnail renderer for the DWIN display
+      OctoHost.*                           OctoPrint plugin layer (c13_octoprint)
+    lcd/dwin/creality/                   Fork-owned DWIN UI for the V3 SE
+    ...                                  Everything else follows upstream Marlin
+buildroot/share/e3v3se/
+  config_profile.py                      Derive / apply / check / stale for profiles
+  check_profile.py                       Guardrails (boundary, config, build)
+  baseline.json                          Reviewed upstream-boundary and size baseline
+  active_profile                         Default profile name for the tools
+  profiles/<name>/
+    overrides.txt                        Define states (enabled / disabled / value)
+    residual.*.patch                     Fork-only options and blocks
 ```
 
-#### Delta Routine
+Fork-only functionality currently includes: DWIN thumbnail rendering, one-click printing, X/Delta automatic Z-offset routines, FT_Motion with input shaping, the HX711 load-cell path, CRTouch helpers, the compact 6x6 leveling grid, LCD dimmer and brightness controls, and filament runout handling.
 
-<div align="left" >
+## Configuration profiles
 
-  <img src="https://github.com/user-attachments/assets/f0a8cc2a-b196-4064-a417-54862a30370d" width="40%" height="40%"/>
+A profile is the difference between upstream's configuration files and the machine configuration:
 
-</div>  
+- `overrides.txt` lists define states (for example `Configuration_adv.h E FT_MOTION`).
+- `residual.*.patch` carries options and blocks that do not exist upstream.
 
-Enable in configuration.h
-```c++
-#define D_ROUTINE_AUTO_OFFSET  // Enable this to calculate the Z offset automatically using the 4 points of the bed, (Delta) pattern
+```sh
+# Regenerate the profile after editing Configuration*.h by hand
+python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint derive
+
+# Verify the files equal upstream + profile
+python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint check
+
+# Rebuild the files from upstream + profile (after taking upstream's versions)
+python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint apply
+
+# List upstream options that the profile disables (review after a merge)
+python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint stale
 ```
 
-> [!TIP]
-> 
-> Follow the [Wiki Article to set your Z offset](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/wiki/Z-offset/)
->
+Without `--profile`, the tools use the name stored in `buildroot/share/e3v3se/active_profile`.
 
-<br>
+`c13_octoprint` differs from `c13_sd` only by `OCTOPRINT_PLUGIN`, `MEATPACK_ON_SERIAL_PORT_1` (on) and `ONE_CLICK_PRINT` (off).
 
-### * Leveling Menu
+## Enabling and disabling features by hand
 
-<div align="left" >
+Features are plain Marlin defines. To toggle one, edit `Marlin/Configuration.h` or `Marlin/Configuration_adv.h`, then record the change in the profile so it survives the next upstream merge.
 
-  <img src="./media/LevelingMenu.gif" width="55%" height="55%"/>
+1. **Edit the define.** Comment it out (`//#define FEATURE`) to disable it, or remove the `//` to enable it. Options that carry a value keep it on the same line.
+2. **Regenerate the profile** for the branch you are on:
+   ```sh
+   python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd derive
+   python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd check
+   ```
+3. **Build and check size**, then commit and run the guardrails:
+   ```sh
+   pio run -e STM32F103RET6_creality
+   python3 buildroot/share/e3v3se/check_profile.py build
+   ```
+4. If flash or RAM grew on purpose, update the baseline with `check_profile.py build --update` after reviewing the change.
 
-</div>  
+Skipping step 2 is the usual cause of a failing `config` guardrail, because the profile no longer matches the files.
 
-We have splitted the Leveling features to avoid a complete reset like routine. Now you can Level the bed, get the offset and edit the point individually.
+Some options depend on others. For example, `ONE_CLICK_PRINT` requires `NO_SD_AUTOSTART` (set automatically inside its own block) and is incompatible with `BROWSE_MEDIA_ON_INSERT`; the build stops with a sanity-check message if a dependency is missing.
 
-<br>
+### Common switches
 
-### * Skew Correction Menu
+| Feature | Define | File |
+| --- | --- | --- |
+| Thumbnail rendering | `DWIN_RENDER_THUMBNAIL` | `Configuration.h` |
+| One-click print | `ONE_CLICK_PRINT` | `Configuration_adv.h` |
+| Auto Z-offset, delta (4 points) | `D_ROUTINE_AUTO_OFFSET` | `Configuration.h` |
+| Auto Z-offset, X (5 points) | `X_ROUTINE_AUTO_OFFSET` | `Configuration.h` |
+| FT_Motion and input shaping | `FT_MOTION` | `Configuration_adv.h` |
+| Linear Advance | `LIN_ADVANCE` | `Configuration_adv.h` |
+| Brightness and dimmer menu | `DWIN_DIMM_MENU` | `Configuration.h` |
+| Z height after homing menu | `DWIN_ZHOME_MENU` | `Configuration.h` |
+| Custom extrude menu | `DWIN_CUSTOM_EXTRUDE` | `Configuration.h` |
+| Extra preheat labels | `EXTRA_PREHEAT_LABELS` | `Configuration.h` |
+| Input shaping menu | `DWIN_INPUT_SHAPING_MENU` | `Configuration_adv.h` |
+| Filament runout sensor | `FILAMENT_RUNOUT_SENSOR` | `Configuration.h` |
+| OctoPrint plugin layer | `OCTOPRINT_PLUGIN` | `Configuration.h` (`c13_octoprint` only) |
+| MeatPack on serial port 1 | `MEATPACK_ON_SERIAL_PORT_1` | `Configuration_adv.h` (on in `c13_octoprint`) |
 
-<div align="left" >
+The table lists switches, not a statement of the current state; check the define in the file to see whether it is on in your branch. Some menu options depend on a base feature (for example the input shaping menu needs `FT_MOTION` or the legacy shapers).
 
-  <img src="./media/SkewFactor.gif" width="55%" height="55%"/>
+## Guardrails
 
-</div> 
+The guardrails compare against `HEAD`, so commit before running them.
 
-We have created a Menu to set and calculate the bed Skew of your printer.
-
-> [!TIP]
-> 
-> Follow the [Wiki Article to set the Skew Factor](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/wiki/Fixing-Skew)
->
-
-
-## Ported Features.
-
-### * Filament Runout Sensor
-Activated the support for the sensor.
-  
-### * Fixed M600 for Hosts Commands
-Fixed the M600 routine to work with Host or Knob.
-If working from Host you the Knob will not work.
-
-### * Host Commands Support
-Enabled Host command support along the Fix of [#39](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/issues/39) usage of `M876` even while Meatpack is enabled.
-
-
-### * Compact 6x6 GRID
-<div align="left" >
-
-  <img src="./media/grid.jpg" width="55%" height="55%"/>
-
-</div> 
-
-### * Input Shaping.
-
-<div align="left" >
-
-  <img src="./media/InputShaping.gif" width="55%" height="55%"/>
-
-</div> 
-
-Enable in configuration.h
-```c++
-#define INPUT_SHAPING_X
-#define INPUT_SHAPING_Y
+```sh
+python3 buildroot/share/e3v3se/check_profile.py boundary   # edits to upstream-owned files must not grow
+python3 buildroot/share/e3v3se/check_profile.py config     # config files match upstream + profile
+python3 buildroot/share/e3v3se/check_profile.py build      # RAM/flash must not exceed the baseline
 ```
 
-To Enable the Display Menu
+Use `--update` only after a deliberate, reviewed change. A new edit to an upstream-owned file has to be added to the boundary list in `baseline.json` on purpose.
 
-```c++
-#define DWIN_INPUT_SHAPING_MENU        // Enable LCD Menu to Configure Input Shaping parameters
+## Merging upstream
+
+1. Merge `bugfix-2.1.x` and resolve conflicts in favor of upstream, keeping the fork hooks.
+2. Take upstream's `Configuration.h` and `Configuration_adv.h`, then run `config_profile.py apply`. It fails loudly if a residual patch no longer applies.
+3. Run `config_profile.py stale` to review upstream options that the profile turns off.
+4. Run the three guardrails and build every profile.
+5. Flash and print a test object before releasing.
+
+## Host (OctoPrint) integration
+
+The `c13_octoprint` profile enables the host layer in `Marlin/src/e3v3se/OctoHost.*`, designed for the [OctoPrint-LCD_E3V3SE](https://github.com/navaismo/Octoprint-LCD_E3V3SE) plugin:
+
+- `M9000` drives the print and finish screens and the print details (file name, time, progress).
+- `M9001` streams the thumbnail (RGB565, 96 px wide) line by line.
+- `M115` or `M9000 A1` marks the host as connected. `HOST_LINK_UP()` then enables host prompts for pause, resume and filament change; without the plugin, stock upstream behavior is kept.
+- MeatPack is enabled and the emergency parser is kept in sync with it, so `M876`, `M108` and `M410` keep working.
+
+## Building
+
+PlatformIO is the build system. Use a recent PlatformIO Core (6.2 or newer).
+
+```sh
+pio run -e STM32F103RET6_creality    # C13
+pio run -e STM32F401RC_creality      # C14 (legacy branches)
 ```
 
-> [!TIP]
-> 
-> Follow the [Wiki Article to understand Input Shaping](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/wiki/Input-Shaping)
->
+Native unit tests and the upstream build tests are available through the Makefile (`make unit-test-all-local`, `make tests-all-local`).
 
+## Memory budget
 
-<br>
+Flash and RAM are hard limits on the STM32F103RE (512 KB flash, 64 KB RAM). The reviewed baseline is stored in `buildroot/share/e3v3se/baseline.json`; the `build` guardrail fails when firmware grows beyond it. Check usage after enabling or adding a feature.
 
-### * LCD Dimm & Brightness Menu.
+## Further documentation
 
-<div align="left" >
+- [`AGENTS.E3V3SE.md`](AGENTS.E3V3SE.md): working rules for this fork.
+- [`MEMORY.md`](MEMORY.md): branch map, history and technical decisions.
+- [`.github/copilot-instructions.md`](.github/copilot-instructions.md): build, test and architecture notes for AI assistants.
+- `docs/`: upstream Marlin technical documents.
 
-  <img src="./media/DisplayMenu.gif" width="55%" height="55%"/>
+---
 
-</div> 
-
-Enable in configuration.h
-```c++
-#define DWIN_DIMM_MENU                    // Enable LCD Menu to Configure Brightness & DIMM parameters
-```
-
-If you don't enable you can use the Mcodes M255 & 256
+The original Marlin README follows, as required by the upstream project's policy.
 
 <br>
-
-
-### * Mute Buzzer.
-
-<div align="left" >
-
-  <img src="./media/DisplayMenu.gif" width="55%" height="55%"/>
-
-</div> 
-
-This feature is enabled by default.
-
 <br>
-
-### * CRTouch test functions.
-
-<div align="left" >
-
-  <img src="./media/Probe.gif" width="55%" height="55%"/>
-
-</div> 
-
-This feature is enabled by default.
-
+<hr>
 <br>
-
-### * Z Height after Homing.
-
-<div align="left" >
-
-  <img src="./media/ZHeight.gif" width="55%" height="55%"/>
-
-</div> 
-
-Enable in configuration.h
-
-```c++
-#define DWIN_ZHOME_MENU             // Enable LCD Menu to Configure Z Height after Homing
-```
-<br>
-
-### * Extra Preheat Labels.
-
-<div align="left" >
-
-  <img src="./media/PreheatLabels.gif" width="55%" height="55%"/>
-
-</div> 
-
-Enable in configuration.h
-
-```c++
-#define EXTRA_PREHEAT_LABELS    // Enable LCD Menu to Configure 2 Extra Preheat Materials
-```
-
-<br>
-
-### * Custom Extrude Menu.
-
-<div align="left" >
-
-  <img src="./media/CExtrude.gif" width="55%" height="55%"/>
-
-</div> 
-
-Enable in configuration.h
-
-```c++
-#define DWIN_CUSTOM_EXTRUDE     // Enable LCD Menu for Custom Extrude Functions
-```
-
-<br>
-
-### * Linear Advance.
-
-Enable by default in Configuration_adv.h
-```c++
-#define LIN_ADVANCE
-``` 
-
-> [!TIP]
-> 
-> Follow the [Wiki Article to understand Linear Advance.](https://github.com/navaismo/Marlin_bugfix_2.1_E3V3SE/wiki/Linear-Advance)
->
-
-
-
-### * Increased Temperature for BED and Noozle.
-
-* **BED 120°C**
-* **Nozzle 300°C**
-
-> [!CAUTION]
-> 
-> Beware of the ptfe tube that present deformation starting at 250°C degrees, for Higher temps replace the noozle for the unicorn.
->
-
-
-<br>
-
-## Explore new features.
-
-You can explore the new features on the Marlin 2.1 like:
-
-### * **FT_MOTION** Which enables different filters of Shapers for the machine, like Klipper does. 
-```c++
-#define FT_MOTION
-#if ENABLED(FT_MOTION)
-  #define FTM_IS_DEFAULT_MOTION               // Use FT Motion as the factory default?
-  //#define FT_MOTION_MENU                      // Provide a MarlinUI menu to set M493 and M494 parameters
-  //#define FTM_HOME_AND_PROBE                  // Use FT Motion for homing / probing. Disable if FT Motion breaks these functions.
-
-  #define FTM_DEFAULT_DYNFREQ_MODE dynFreqMode_DISABLED // Default mode of dynamic frequency calculation. (DISABLED, Z_BASED, MASS_BASED)
-
-  #define FTM_DEFAULT_SHAPER_X      ftMotionShaper_3HEI // Default shaper mode on X axis (NONE, ZV, ZVD, ZVDD, ZVDDD, EI, 2HEI, 3HEI, MZV)
-  #define FTM_SHAPING_DEFAULT_FREQ_X   40.0f    // (Hz) Default peak frequency used by input shapers
-  #define FTM_SHAPING_ZETA_X            0.1f    // Zeta used by input shapers for X axis
-  #define FTM_SHAPING_V_TOL_X           0.05f   // Vibration tolerance used by EI input shapers for X axis
-
-  #define FTM_DEFAULT_SHAPER_Y      ftMotionShaper_3HEI // Default shaper mode on Y axis
-  #define FTM_SHAPING_DEFAULT_FREQ_Y   42.0f    // (Hz) Default peak frequency used by input shapers
-  #define FTM_SHAPING_ZETA_Y            0.1f    // Zeta used by input shapers for Y axis
-  #define FTM_SHAPING_V_TOL_Y           0.05f   // Vibration tolerance used by EI input shapers for Y axis
-
-  //#define FTM_SHAPER_Z                        // Include Z shaping support
-  #define FTM_DEFAULT_SHAPER_Z      ftMotionShaper_NONE // Default shaper mode on Z axis
-  #define FTM_SHAPING_DEFAULT_FREQ_Z   21.0f    // (Hz) Default peak frequency used by input shapers
-  #define FTM_SHAPING_ZETA_Z            0.03f   // Zeta used by input shapers for Z axis
-  #define FTM_SHAPING_V_TOL_Z           0.05f   // Vibration tolerance used by EI input shapers for Z axis
-
-  //#define FTM_SHAPER_E                        // Include E shaping support
-                                                // Required to synchronize extruder with XYZ (better quality)
-  #define FTM_DEFAULT_SHAPER_E      ftMotionShaper_NONE // Default shaper mode on Extruder axis
-  #define FTM_SHAPING_DEFAULT_FREQ_E   21.0f    // (Hz) Default peak frequency used by input shapers
-  #define FTM_SHAPING_ZETA_E            0.03f   // Zeta used by input shapers for E axis
-  #define FTM_SHAPING_V_TOL_E           0.05f   // Vibration tolerance used by EI input shapers for E axis
-
-  #define FTM_SMOOTHING                       // Smoothing can reduce artifacts and make steppers quieter
-                                                // on sharp corners, but too much will round corners.
-  #if ENABLED(FTM_SMOOTHING)
-    #define FTM_MAX_SMOOTHING_TIME      0.10f   // (s) Maximum smoothing time. Higher values consume more RAM.
-                                                // Increase smoothing time to reduce jerky motion, ghosting and noises.
-    #define FTM_SMOOTHING_TIME_X        0.00f   // (s) Smoothing time for X axis. Zero means disabled.
-    #define FTM_SMOOTHING_TIME_Y        0.00f   // (s) Smoothing time for Y axis
-    #define FTM_SMOOTHING_TIME_Z        0.00f   // (s) Smoothing time for Z axis
-    #define FTM_SMOOTHING_TIME_E        0.02f   // (s) Smoothing time for E axis. Prevents noise/skipping from LA by
-                                                //     smoothing acceleration peaks, which may also smooth curved surfaces.
-  #endif
-
-  #define FTM_TRAJECTORY_TYPE   TRAPEZOIDAL // Block acceleration profile (TRAPEZOIDAL, POLY5, POLY6)
-                                            // TRAPEZOIDAL: Continuous Velocity. Max acceleration is respected.
-                                            // POLY5:       Like POLY6 with 1.5x but uses less CPU.
-                                            // POLY6:       Continuous Acceleration (aka S_CURVE).
-                                            // POLY trajectories not only reduce resonances without rounding corners, but also
-                                            // reduce extruder strain due to linear advance.
-
-  #define FTM_POLY6_ACCELERATION_OVERSHOOT 1.875f // Max acceleration overshoot factor for POLY6 (1.25 to 1.875)
-
-  /**
-   * Advanced configuration
-   */
-  #define FTM_BUFFER_SIZE             128   // Window size for trajectory generation, must be a power of 2 (e.g 64, 128, 256, ...)
-                                            // The total buffered time in seconds is (FTM_BUFFER_SIZE/FTM_FS)
-  #define FTM_FS                     1000   // (Hz) Frequency for trajectory generation.
-  #define FTM_STEPPER_FS        2'000'000   // (Hz) Time resolution of stepper I/O update. Shouldn't affect CPU much (slower board testing needed)
-  #define FTM_MIN_SHAPE_FREQ           20   // (Hz) Minimum shaping frequency, lower consumes more RAM
-
-#endif // FT_MOTION
-``` 
-
-
-> [!TIP]
-> 
-> Check the [Octoprint Pinput-Shaping plugin](https://github.com/navaismo/Octoprint-Pinput_Shaping) to get the frequencies.
->
-> Check the [comparison between Marlin & Klipper Input Shaping](https://github.com/navaismo/Octoprint-Pinput_Shaping/discussions/27).
->
-
-<br>
-
-### * **AXIS TWIST COMPENSATION** 
-```c++
- // Add calibration in the Probe Offsets menu to compensate for X-axis twist.
-    #define X_AXIS_TWIST_COMPENSATION
-    #if ENABLED(X_AXIS_TWIST_COMPENSATION)
-      /**
-       * Enable to init the Probe Z-Offset when starting the Wizard.
-       * Use a height slightly above the estimated nozzle-to-probe Z offset.
-       * For example, with an offset of -5, consider a starting height of -4.
-       */
-      #define XATC_START_Z 0.0
-      #define XATC_MAX_POINTS 3             // Number of points to probe in the wizard
-      #define XATC_Y_POSITION Y_CENTER      // (mm) Y position to probe
-      #define XATC_Z_OFFSETS { 0, 0, 0 }    // Z offsets for X axis sample points
-    #endif
-```    
-
-
-### * Marlin 2.1.x is also compatible with the [CacomixtlePad for Android](https://github.com/navaismo/cacomixtlePad)
-
-![demo](./media/demo_fast.gif)
-
-
-
-And so on...
-
 
 <br>
 <br>
