@@ -14,6 +14,7 @@ The goal of this repository is simple: **pull upstream Marlin at any time withou
 - [Configuration profiles](#configuration-profiles)
 - [Enabling and disabling features by hand](#enabling-and-disabling-features-by-hand)
 - [Input shaping with FT_Motion (`M493`)](#input-shaping-with-ft_motion-m493)
+- [Linear Advance: legacy vs FT_Motion](#linear-advance-legacy-vs-ft_motion)
 - [Guardrails](#guardrails)
 - [Merging upstream](#merging-upstream)
 - [Host (OctoPrint) integration](#host-octoprint-integration)
@@ -202,6 +203,26 @@ M500
 ```
 
 Factory defaults: X none at 37 Hz, Y 3HEI at 42 Hz. To change them, edit `FTM_DEFAULT_SHAPER_*` and `FTM_SHAPING_DEFAULT_FREQ_*` in `Configuration_adv.h` and follow the profile steps above.
+
+## Linear Advance: legacy vs FT_Motion
+
+There are two independent Linear Advance implementations, and this fork uses the FT_Motion one.
+
+| | Legacy `LIN_ADVANCE` | FT_Motion built-in advance |
+| --- | --- | --- |
+| Enabled by | `#define LIN_ADVANCE` (commented out in this fork) | Automatically, whenever `FT_MOTION` is on and the machine has extruders |
+| Where it runs | Stepper ISR, per planner block | Trajectory generator (1 kHz), added to the extruder position |
+| Applies to | The standard-motion planner | Only moves executed by FT_Motion |
+| K-factor | `M900 K<mm>` | The same `M900 K<mm>` (default `ADVANCE_K 0.0`, i.e. no effect until you set it) |
+
+How the FT_Motion version behaves:
+
+- For printing moves it adds `extruder velocity x K` to the extruder trajectory, so pressure is built up ahead of acceleration and relieved before deceleration.
+- Retract and unretract moves are **not** advanced, so retractions behave as the slicer wrote them.
+- `LIN_ADVANCE` stays commented out in this fork. FT_Motion does not need it, and enabling it only adds the legacy ISR code (more flash) without changing FT_Motion moves.
+- `M493 P0` / `M493 P1` turns the advance term off or on at runtime without changing K (see the `M493` help in `Marlin/src/gcode/feature/ft_motion/M493.cpp`).
+
+**Effect on extrusion.** Because K is shared through `M900`, a K value in your slicer start G-code is applied by FT_Motion even though `LIN_ADVANCE` is commented out. On this printer a start G-code carrying `M900 K0.10` coincided with under-extrusion after a number of retractions. The prints were good again after removing that line from the slicer start G-code, recalibrating E-steps and lowering the speed. Treat K as untuned: leave it at `0` until you have calibrated it (a pressure-advance pattern is the usual way), then set it with `M900 K<value>` and save with `M500`.
 
 ## Guardrails
 
