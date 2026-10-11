@@ -1,10 +1,10 @@
-# Marlin for the Creality Ender-3 V3 SE
+# Marlin for the Creality Ender-3 V3 SE - OctoPrint (C13)
 
 An upstream-first Marlin 2.1.x bugfix fork for the **Creality Ender-3 V3 SE**.
 
 The goal of this repository is simple: **pull upstream Marlin at any time without regressions**. All fork-specific behavior is isolated behind a small, auditable boundary, and the machine configuration is generated from pristine upstream files plus a reviewed profile.
 
-> Status: C13 (STM32F103RE) SD-card and OctoPrint profiles are working and verified on hardware. C14 (STM32F401) is the next migration step.
+> This is the `c13_octoprint` branch: firmware for the **C13 (STM32F103RE)** board driven by **OctoPrint** with the [OctoPrint-LCD_E3V3SE](https://github.com/navaismo/Octoprint-LCD_E3V3SE) plugin. Verified on hardware: MeatPack, host pause/resume/stop (including `M876`), thumbnail stream and the finish screen. For SD-card printing use the `c13_sd` branch.
 
 ## Table of Contents
 
@@ -13,6 +13,7 @@ The goal of this repository is simple: **pull upstream Marlin at any time withou
 - [Project structure](#project-structure)
 - [Configuration profiles](#configuration-profiles)
 - [Enabling and disabling features by hand](#enabling-and-disabling-features-by-hand)
+- [Input shaping with FT_Motion (`M493`)](#input-shaping-with-ft_motion-m493)
 - [Guardrails](#guardrails)
 - [Merging upstream](#merging-upstream)
 - [Host (OctoPrint) integration](#host-octoprint-integration)
@@ -81,7 +82,7 @@ Upstream code flows in untouched, the machine configuration is generated from it
 | Branch | Hardware | Purpose |
 | --- | --- | --- |
 | `c13_sd` | C13 (STM32F103RE), SD card | Main line. Mirror of the former `architecture/e3v3se-upstream-seams`. |
-| `c13_octoprint` | C13, serial host (OctoPrint) | `c13_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol. |
+| `c13_octoprint` | C13, serial host (OctoPrint) | **This branch.** `c13_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol. |
 | `for_E3V3SE`, `for_Octoprint` | C13 | Legacy branches, kept for reference. |
 | `for_STM32F401`, `for_Octoprint_F401` | C14 (STM32F401) | Legacy branches, pending migration to the profile system. |
 
@@ -134,7 +135,7 @@ python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint stale
 
 Without `--profile`, the tools use the name stored in `buildroot/share/e3v3se/active_profile`.
 
-`c13_octoprint` differs from `c13_sd` only by `OCTOPRINT_PLUGIN`, `MEATPACK_ON_SERIAL_PORT_1` (on) and `ONE_CLICK_PRINT` (off).
+This branch uses the `c13_octoprint` profile. It differs from `c13_sd` only by `OCTOPRINT_PLUGIN` (on), `MEATPACK_ON_SERIAL_PORT_1` (on) and `ONE_CLICK_PRINT` (off, not needed when printing from the host).
 
 ## Enabling and disabling features by hand
 
@@ -143,8 +144,8 @@ Features are plain Marlin defines. To toggle one, edit `Marlin/Configuration.h` 
 1. **Edit the define.** Comment it out (`//#define FEATURE`) to disable it, or remove the `//` to enable it. Options that carry a value keep it on the same line.
 2. **Regenerate the profile** for the branch you are on:
    ```sh
-   python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd derive
-   python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd check
+   python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint derive
+   python3 buildroot/share/e3v3se/config_profile.py --profile c13_octoprint check
    ```
 3. **Build and check size**, then commit and run the guardrails:
    ```sh
@@ -155,14 +156,14 @@ Features are plain Marlin defines. To toggle one, edit `Marlin/Configuration.h` 
 
 Skipping step 2 is the usual cause of a failing `config` guardrail, because the profile no longer matches the files.
 
-Some options depend on others. For example, `ONE_CLICK_PRINT` requires `NO_SD_AUTOSTART` (set automatically inside its own block) and is incompatible with `BROWSE_MEDIA_ON_INSERT`; the build stops with a sanity-check message if a dependency is missing.
+Some options depend on others. `OCTOPRINT_PLUGIN` relies on `HOST_ACTION_COMMANDS` and `HOST_PROMPT_SUPPORT` (both on) for the pause and filament-change prompts, and `MEATPACK_ON_SERIAL_PORT_1` only helps when the host sends packed G-code. Upstream's sanity checks stop the build with a message when a hard dependency is missing.
 
 ### Common switches
 
 | Feature | Define | File |
 | --- | --- | --- |
 | Thumbnail rendering | `DWIN_RENDER_THUMBNAIL` | `Configuration.h` |
-| One-click print | `ONE_CLICK_PRINT` | `Configuration_adv.h` |
+| One-click print | `ONE_CLICK_PRINT` | `Configuration_adv.h` (off in this branch) |
 | Auto Z-offset, delta (4 points) | `D_ROUTINE_AUTO_OFFSET` | `Configuration.h` |
 | Auto Z-offset, X (5 points) | `X_ROUTINE_AUTO_OFFSET` | `Configuration.h` |
 | FT_Motion and input shaping | `FT_MOTION` | `Configuration_adv.h` |
@@ -173,10 +174,34 @@ Some options depend on others. For example, `ONE_CLICK_PRINT` requires `NO_SD_AU
 | Extra preheat labels | `EXTRA_PREHEAT_LABELS` | `Configuration.h` |
 | Input shaping menu | `DWIN_INPUT_SHAPING_MENU` | `Configuration_adv.h` |
 | Filament runout sensor | `FILAMENT_RUNOUT_SENSOR` | `Configuration.h` |
-| OctoPrint plugin layer | `OCTOPRINT_PLUGIN` | `Configuration.h` (`c13_octoprint` only) |
-| MeatPack on serial port 1 | `MEATPACK_ON_SERIAL_PORT_1` | `Configuration_adv.h` (on in `c13_octoprint`) |
+| OctoPrint plugin layer | `OCTOPRINT_PLUGIN` | `Configuration.h` (on in this branch) |
+| MeatPack on serial port 1 | `MEATPACK_ON_SERIAL_PORT_1` | `Configuration_adv.h` (on in this branch) |
 
 The table lists switches, not a statement of the current state; check the define in the file to see whether it is on in your branch. Some menu options depend on a base feature (for example the input shaping menu needs `FT_MOTION` or the legacy shapers).
+
+## Input shaping with FT_Motion (`M493`)
+
+Input shaping uses the **FT_Motion advanced shapers** (`FTM_SHAPER_*`), not the legacy `INPUT_SHAPING_X/Y` feature, which stays off. All shaper types are compiled in, and the shapers are configured at runtime with `M493`, so no LCD menu is needed (the LCD menu `DWIN_INPUT_SHAPING_MENU` is a separate, later step).
+
+| Command | Effect |
+| --- | --- |
+| `M493` | Report the current FT_Motion and shaper settings |
+| `M493 S1` / `M493 S0` | Enable / disable Fixed-Time Motion |
+| `M493 X C<mode> A<Hz>` | Shaper mode and frequency for X |
+| `M493 Y C<mode> A<Hz>` | Shaper mode and frequency for Y |
+| `M493 X Y I<zeta> Q<vtol>` | Damping ratio and vibration tolerance (EI-family shapers) |
+
+Modes for `C`: `0` None, `1` ZV, `2` ZVD, `3` ZVDD, `4` ZVDDD, `5` EI, `6` 2HEI, `7` 3HEI, `8` MZV. Set the mode for every axis you want shaped, then save with `M500`.
+
+Example: 3-hump EI at 42 Hz on Y and ZV at 37 Hz on X. With the [OctoPrint Input Shaping plugin](https://github.com/navaismo/Octoprint-Pinput_Shaping) these `M493` commands are sent from OctoPrint.
+
+```gcode
+M493 Y C7 A42
+M493 X C1 A37
+M500
+```
+
+Factory defaults: X none at 37 Hz, Y 3HEI at 42 Hz. To change them, edit `FTM_DEFAULT_SHAPER_*` and `FTM_SHAPING_DEFAULT_FREQ_*` in `Configuration_adv.h` and follow the profile steps above.
 
 ## Guardrails
 

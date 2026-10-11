@@ -1,8 +1,8 @@
 name: Build E3V3SE Firmware
 
-# Run this workflow from the branch you want to build (c13_sd or c13_octoprint):
-# the committed configuration of that branch is the starting point, and the inputs below
-# only override individual feature defines for this build.
+# c13_octoprint branch (C13, OctoPrint host). The committed configuration of this branch is the
+# starting point, and the inputs below only override individual feature defines for this build.
+# Defaults match the branch: plugin and MeatPack on, one-click print off.
 on:
   workflow_dispatch:
     inputs:
@@ -19,9 +19,9 @@ on:
         type: boolean
         default: true
       one_click_print:
-        description: "ONE_CLICK_PRINT (SD card only; keep off for OctoPrint)"
+        description: "ONE_CLICK_PRINT (SD card only; off for OctoPrint)"
         type: boolean
-        default: true
+        default: false
       d_routine_auto_offset:
         description: "D_ROUTINE_AUTO_OFFSET (Z offset, Delta pattern)"
         type: boolean
@@ -67,13 +67,13 @@ on:
         type: boolean
         default: false
       octoprint_plugin:
-        description: "OCTOPRINT_PLUGIN (c13_octoprint branch only)"
+        description: "OCTOPRINT_PLUGIN (Octoprint-LCD_E3V3SE plugin layer)"
         type: boolean
-        default: false
+        default: true
       meatpack:
         description: "MEATPACK_ON_SERIAL_PORT_1 (host transmission compression)"
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read
