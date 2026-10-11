@@ -84,8 +84,10 @@ Upstream code flows in untouched, the machine configuration is generated from it
 | --- | --- | --- |
 | `c13_sd` | C13 (STM32F103RE), SD card | Main line. Mirror of the former `architecture/e3v3se-upstream-seams`. |
 | `c13_octoprint` | C13, serial host (OctoPrint) | **This branch.** `c13_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol. |
-| `for_E3V3SE`, `for_Octoprint` | C13 | Legacy branches, kept for reference. |
-| `for_STM32F401`, `for_Octoprint_F401` | C14 (STM32F401) | Legacy branches, pending migration to the profile system. |
+| `legacy/for_E3V3SE`, `legacy/for_Octoprint` | C13 | Pre-architecture branches, kept for reference only. |
+| `legacy/for_STM32F401`, `legacy/for_Octoprint_F401` | C14 (STM32F401) | Pre-architecture branches. They remain the only C14 firmware until C14 is migrated to the profile system. |
+
+`c13_sd` is the default branch. The `legacy/` branches are frozen and no longer receive upstream merges.
 
 Each branch carries its own copy of the documentation, so notes follow the code they describe.
 
@@ -259,7 +261,7 @@ PlatformIO is the build system. Use a recent PlatformIO Core (6.2 or newer).
 
 ```sh
 pio run -e STM32F103RET6_creality    # C13
-pio run -e STM32F401RC_creality      # C14 (legacy branches)
+pio run -e STM32F401RC_creality      # C14 (`legacy/for_STM32F401`, `legacy/for_Octoprint_F401`)
 ```
 
 Native unit tests and the upstream build tests are available through the Makefile (`make unit-test-all-local`, `make tests-all-local`).

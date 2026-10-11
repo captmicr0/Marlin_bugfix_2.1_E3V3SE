@@ -11,6 +11,8 @@ This is a point-in-time reference for future work, not a substitute for checking
 
 ## Product branch map
 
+> **Update 2026-10-10:** `c13_sd` is now the GitHub default branch. The branches below were renamed with a `legacy/` prefix on the remote (`legacy/for_E3V3SE`, `legacy/for_Octoprint`, `legacy/for_Octoprint_F401`, `legacy/for_STM32F401`). The table keeps the original names as inspected; read them as `legacy/<name>`. Active work: `c13_sd` and `c13_octoprint`.
+
 | Branch | Hardware / purpose | Distinctive settings or state observed |
 | --- | --- | --- |
 | `for_E3V3SE` | C13, SD-first firmware | `BOARD_CREALITY_V3_GD303`; `DWIN_RENDER_THUMBNAIL`, `D_ROUTINE_AUTO_OFFSET`, `USE_AUTOZ_TOOL_2`, `ONE_CLICK_PRINT`; current custom DWIN location is `Marlin/src/lcd/dwin/creality/`. |
