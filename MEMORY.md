@@ -102,12 +102,12 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 - The thumbnail UI hooks in `dwin.cpp` (ThumbTune menus, `Goto_ThumbPrint`, ~116 `hasThumbnail` branches inside HMI handlers) stay there: they share static state with the handlers and can't be split without a UI rewrite.
 
 ## C13 OctoPrint host profile (branch `c13_octoprint`)
-- Profile `buildroot/share/e3v3se/profiles/c13_octoprint` is derived from `c13_sd`; the only differences are `OCTOPRINT_PLUGIN` (Configuration.h) and `MEATPACK_ON_SERIAL_PORT_1` (Configuration_adv.h). `buildroot/share/e3v3se/active_profile` names the profile `config_profile.py` uses by default; override with `--profile <name>`.
+- Profile `buildroot/share/e3v3se/profiles/c13_octoprint` is derived from `c13_sd`; the only differences are `OCTOPRINT_PLUGIN` (Configuration.h), `MEATPACK_ON_SERIAL_PORT_1` on and `ONE_CLICK_PRINT` off (Configuration_adv.h; not needed when printing from the host). `buildroot/share/e3v3se/active_profile` names the profile `config_profile.py` uses by default; override with `--profile <name>`.
 - Docs are tracked in git, so every branch carries its own copy; this file describes the state of the branch it is on. Keep branch-specific notes in sections like this one so merges stay trivial.
 - Host layer: `Marlin/src/e3v3se/OctoHost.{h,cpp}` owns `serial_connection_active`, `title`, `MarlinUI::print_time`, `M9000` (A/L/T/P/N plus S=print screen, F=finish screen) and `M9001` (START / `C line offset hex` / END thumbnail stream, RGB565 x 96 px). Dispatch cases are in `gcode.cpp` under `OCTOPRINT_PLUGIN`. Plugin: https://github.com/navaismo/Octoprint-LCD_E3V3SE.
 - `M115` and `M9000 A1` set `serial_connection_active` (`gcode/host/M115.cpp` hook).
 - `HOST_LINK_UP()` (OctoHost.h) gates pause/resume/load/reheat host prompts in `feature/pause.cpp`: always true without the plugin, only true after the plugin connected otherwise.
 - MeatPack stays on for the host profile. `meatpack.{h,cpp}` are identical to `for_Octoprint`; the emergency-parser state is reset on pack/unpack commands so M876/M108/M410 work with MeatPack. M876 itself is stock upstream (`HOST_PROMPT_SUPPORT`).
 - Remaining plugin DWIN code (`OCTOPRINT_PLUGIN` blocks in `lcd/dwin/creality/dwin.cpp`) is unchanged from `for_Octoprint`: `OctoRefresh`, print-time label, "OctoPrint Connected" title, `Goto_ThumbFinish`.
-- Baseline: RAM 44.8%, flash 47.8% (236,852 B); over the 40%/46% targets, baseline raised on purpose.
-- Verified on device: temperature, pause/stop, command streaming. Not yet verified: thumbnail, finish screen, MeatPack + pause, M600 host prompts. Unresolved: OctoPrint handshake (`N0 M110` got no reply while miniterm worked).
+- Baseline: RAM 44.8%, flash 47.7% (236,196 B); over the 40%/46% targets, baseline raised on purpose.
+- Verified on device: temperature, pause/stop/resume from host, command streaming, MeatPack, finish screen. Not yet verified: thumbnail stream, M600 host prompts, ONE_CLICK_PRINT-off build. Unresolved: OctoPrint handshake (`N0 M110` got no reply while miniterm worked).
