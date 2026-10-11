@@ -213,7 +213,7 @@ bool load_filament(const float slow_load_length/*=0*/, const float fast_load_len
 
     #if ENABLED(HOST_PROMPT_SUPPORT)
       const char tool = '0' + TERN0(MULTI_FILAMENT_SENSOR, motion.extruder);
-      hostui.prompt_do(PROMPT_USER_CONTINUE, F("Load Filament T"), tool, FPSTR(CONTINUE_STR));
+      if (HOST_LINK_UP()) hostui.prompt_do(PROMPT_USER_CONTINUE, F("Load Filament T"), tool, FPSTR(CONTINUE_STR));
     #endif
 
     while (marlin.wait_for_user) {
@@ -262,7 +262,7 @@ bool load_filament(const float slow_load_length/*=0*/, const float fast_load_len
     if (show_lcd) ui.pause_show_message(PAUSE_MESSAGE_PURGE);
 
     TERN_(EXTENSIBLE_UI, ExtUI::onUserConfirmRequired(GET_TEXT_F(MSG_FILAMENT_CHANGE_PURGE)));
-    TERN_(HOST_PROMPT_SUPPORT, hostui.continue_prompt(GET_TEXT_F(MSG_FILAMENT_CHANGE_PURGE)));
+    TERN_(HOST_PROMPT_SUPPORT, if (HOST_LINK_UP()) hostui.continue_prompt(GET_TEXT_F(MSG_FILAMENT_CHANGE_PURGE)));
     marlin.wait_for_user = true; // A click or M108 breaks the purge_length loop
     for (float purge_count = purge_length; purge_count > 0 && marlin.wait_for_user; --purge_count)
       motion.unscaled_e_move(1, ADVANCED_PAUSE_PURGE_FEEDRATE);
@@ -355,7 +355,7 @@ bool load_filament(const float slow_load_length/*=0*/, const float fast_load_len
 
   TERN_(MPCTEMP, MPC::e_paused = false);
 
-  TERN_(HOST_PROMPT_SUPPORT, hostui.prompt_end());
+  TERN_(HOST_PROMPT_SUPPORT, if (HOST_LINK_UP()) hostui.prompt_end());
 
   return true;
 }
@@ -464,13 +464,13 @@ bool pause_print(const float retract, const xyz_pos_t &park_point, const bool sh
 
   #if ENABLED(HOST_ACTION_COMMANDS)
     #ifdef ACTION_ON_PAUSED
-      hostui.paused();
+      if (HOST_LINK_UP()) hostui.paused();
     #elif defined(ACTION_ON_PAUSE)
       hostui.pause();
     #endif
   #endif
 
-  TERN_(HOST_PROMPT_SUPPORT, hostui.prompt_open(PROMPT_INFO, F("Pause"), FPSTR(DISMISS_STR)));
+  TERN_(HOST_PROMPT_SUPPORT, if (HOST_LINK_UP()) hostui.prompt_open(PROMPT_INFO, F("Pause"), FPSTR(DISMISS_STR)));
 
   // Indicate that the printer is paused
   ++did_pause_print;
@@ -590,7 +590,7 @@ void wait_for_confirmation(const bool is_reload/*=false*/, const int8_t max_beep
 
   // Wait for filament insert by user and press button
   KEEPALIVE_STATE(PAUSED_FOR_USER);
-  TERN_(HOST_PROMPT_SUPPORT, hostui.continue_prompt(GET_TEXT_F(MSG_NOZZLE_PARKED)));
+  TERN_(HOST_PROMPT_SUPPORT, if (HOST_LINK_UP()) hostui.continue_prompt(GET_TEXT_F(MSG_NOZZLE_PARKED)));
   TERN_(EXTENSIBLE_UI, ExtUI::onUserConfirmRequired(GET_TEXT_F(MSG_NOZZLE_PARKED)));
   marlin.wait_start();    // LCD click or M108 will clear this
 
@@ -632,7 +632,7 @@ void wait_for_confirmation(const bool is_reload/*=false*/, const int8_t max_beep
       #endif
       SERIAL_ECHO_MSG(_PMSG(STR_FILAMENT_CHANGE_HEAT));
 
-      TERN_(HOST_PROMPT_SUPPORT, hostui.prompt_do(PROMPT_USER_CONTINUE, GET_TEXT_F(MSG_HEATER_TIMEOUT), GET_TEXT_F(MSG_REHEAT)));
+      TERN_(HOST_PROMPT_SUPPORT, if (HOST_LINK_UP()) hostui.prompt_do(PROMPT_USER_CONTINUE, GET_TEXT_F(MSG_HEATER_TIMEOUT), GET_TEXT_F(MSG_REHEAT)));
 
       #if ENABLED(TOUCH_UI_FTDI_EVE)
         ExtUI::onUserConfirmRequired(GET_TEXT_F(MSG_FTDI_HEATER_TIMEOUT));
@@ -642,7 +642,7 @@ void wait_for_confirmation(const bool is_reload/*=false*/, const int8_t max_beep
 
       TERN_(HAS_RESUME_CONTINUE, marlin.wait_for_user_response(0, true)); // Wait for LCD click or M108
 
-      TERN_(HOST_PROMPT_SUPPORT, hostui.prompt_do(PROMPT_INFO, GET_TEXT_F(MSG_REHEATING)));
+      TERN_(HOST_PROMPT_SUPPORT, if (HOST_LINK_UP()) hostui.prompt_do(PROMPT_INFO, GET_TEXT_F(MSG_REHEATING)));
 
       LCD_MESSAGE(MSG_REHEATING);
 
@@ -659,7 +659,7 @@ void wait_for_confirmation(const bool is_reload/*=false*/, const int8_t max_beep
       constexpr millis_t nozzle_timeout_ms = SEC_TO_MS(PAUSE_PARK_NOZZLE_TIMEOUT);
       HOTEND_LOOP() thermalManager.heater_idle[e].start(nozzle_timeout_ms);
 
-      TERN_(HOST_PROMPT_SUPPORT, hostui.continue_prompt(GET_TEXT_F(MSG_REHEATDONE)));
+      TERN_(HOST_PROMPT_SUPPORT, if (HOST_LINK_UP()) hostui.continue_prompt(GET_TEXT_F(MSG_REHEATDONE)));
       #if ENABLED(EXTENSIBLE_UI)
         ExtUI::onUserConfirmRequired(GET_TEXT_F(MSG_REHEATDONE));
       #else
@@ -809,7 +809,7 @@ void resume_print(
 
   --did_pause_print;
 
-  TERN_(HOST_PROMPT_SUPPORT, hostui.prompt_open(PROMPT_INFO, F("Resuming"), FPSTR(DISMISS_STR)));
+  TERN_(HOST_PROMPT_SUPPORT, if (HOST_LINK_UP()) hostui.prompt_open(PROMPT_INFO, F("Resuming"), FPSTR(DISMISS_STR)));
 
   // Resume the print job timer if it was running
   if (print_job_timer.isPaused()) print_job_timer.start();

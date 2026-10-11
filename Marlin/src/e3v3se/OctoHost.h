@@ -15,3 +15,6 @@ extern bool serial_connection_active;
 #if ENABLED(OCTOPRINT_PLUGIN)
   extern char title[50];  // M9000 N: job title shown by the plugin (declared in dwin.h too)
 #endif
+
+// True when host prompts/actions should be sent: always for SD profiles, only after the host connected otherwise.
+#define HOST_LINK_UP() TERN(OCTOPRINT_PLUGIN, serial_connection_active, true)
