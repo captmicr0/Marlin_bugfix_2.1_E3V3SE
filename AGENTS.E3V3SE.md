@@ -33,3 +33,6 @@ Read [`MEMORY.md`](./MEMORY.md) for the repository's branch map, custom-feature 
   - Edited the config files by hand? Run `python3 buildroot/share/e3v3se/config_profile.py derive`.
   - After merging upstream: take upstream's config files, then run `config_profile.py apply` (fails loudly if the residual patch no longer applies), then `config_profile.py stale` to review upstream options the profile disables.
 - Guardrails (commit first, they diff `HEAD`): `check_profile.py boundary | config | build`. Use `--update` only after a reviewed change.
+- Host (OctoPrint) code lives in `Marlin/src/e3v3se/OctoHost.*` and is enabled only by `OCTOPRINT_PLUGIN` (profile `c13_octoprint`). `c13_sd` must keep stock upstream behavior. Gate host-only behavior with `HOST_LINK_UP()`, not new `serial_connection_active` copies.
+- Docs (`MEMORY.md`, this file, `.github/copilot-instructions.md`) are per-branch via git; update them on the branch you change.
+- After changing config defines run `config_profile.py --profile <name> derive`, then `check`, then update `baseline.json` (flash and boundary list) after review.

@@ -77,7 +77,7 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 - Step 2 one-click print: realigned with upstream; added `selectNewestFile()` depth-sync (from `origin/fix/53-one-click-print-start-wrong-file`). Not yet tested on a printer.
 - Step 3: auto Z-offset moved to `Marlin/src/e3v3se/`. Thumbnail code is not separable (about 300 refs in dwin.cpp plus marlinui/M73 hooks); left in place.
 - Step 4: C13 SD config profile `profiles/c13_sd` (242 define overrides + residual patches). Firmware verified identical to pre-change build except for the timestamp.
-- Next: C13 host profile (compare with `for_Octoprint`), then C14.
+- Step 5 (done, branch `c13_octoprint`, see below): C13 host profile. Next: C14 (STM32F401).
 - `Marlin/Config-export.h` is a tracked build artifact; consider untracking.
 
 ## First-boot wizard audit (post upstream merge)
@@ -87,7 +87,7 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 - Wizard reruns only when the boot-step byte != `Boot_Step_Max` (blank EEPROM / fresh install). Not retriggered on settings reset (unchanged behavior). Not tested on device.
 
 ## FT_MOTION (C13 SD)
-- Enabled via profile overrides (`FT_MOTION`, `FTM_IS_DEFAULT_MOTION`, X shaper NONE, Y 3HEI 42 Hz, X freq 37). Legacy `INPUT_SHAPING_X/Y` removed (replaced by FTM shapers). `LIN_ADVANCE` stays on; upstream FTM supports it natively (`FTM_HAS_LIN_ADVANCE`). Rationale: issue #23 (SD print stalls fixed by FTM).
+- Enabled via profile overrides (`FT_MOTION`, `FTM_IS_DEFAULT_MOTION`, X shaper NONE, Y 3HEI 42 Hz, X freq 37). Legacy `INPUT_SHAPING_X/Y` removed (replaced by FTM shapers). `LIN_ADVANCE` was later turned off (underextrusion after retractions; the K value had come from the slicer start G-code). `M900 K` still works at runtime. K calibration postponed. Rationale: issue #23 (SD print stalls fixed by FTM).
 - Issue #23 comment also had LIN_ADV and STEALTHCHOP_E off; we kept them on per request. If stalls return, test with them off first.
 - Issue #23 also saw broken Z-offset after FTM: `getZOffset()` (e3v3se/AutoOffset.cpp) now runs under `FTM_DISABLE_IN_SCOPE()`.
 - Baseline: RAM 29,220 B, flash 234,668 B (47.3%, ~1.2 KB under the 46%-of-512KB cap).
@@ -100,3 +100,14 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 ## Thumbnail renderer extraction
 - `DWIN_RenderThumb` and its SD/RLE helpers moved from `lcd/dwin/creality/dwin_lcd.cpp` to `Marlin/src/e3v3se/ThumbRender.cpp` (built via `platformio.ini` filter, guarded by `DWIN_RENDER_THUMBNAIL`). Behavior unchanged; flash +56 B.
 - The thumbnail UI hooks in `dwin.cpp` (ThumbTune menus, `Goto_ThumbPrint`, ~116 `hasThumbnail` branches inside HMI handlers) stay there: they share static state with the handlers and can't be split without a UI rewrite.
+
+## C13 OctoPrint host profile (branch `c13_octoprint`)
+- Profile `buildroot/share/e3v3se/profiles/c13_octoprint` is derived from `c13_sd`; the only differences are `OCTOPRINT_PLUGIN` (Configuration.h) and `MEATPACK_ON_SERIAL_PORT_1` (Configuration_adv.h). `buildroot/share/e3v3se/active_profile` names the profile `config_profile.py` uses by default; override with `--profile <name>`.
+- Docs are tracked in git, so every branch carries its own copy; this file describes the state of the branch it is on. Keep branch-specific notes in sections like this one so merges stay trivial.
+- Host layer: `Marlin/src/e3v3se/OctoHost.{h,cpp}` owns `serial_connection_active`, `title`, `MarlinUI::print_time`, `M9000` (A/L/T/P/N plus S=print screen, F=finish screen) and `M9001` (START / `C line offset hex` / END thumbnail stream, RGB565 x 96 px). Dispatch cases are in `gcode.cpp` under `OCTOPRINT_PLUGIN`. Plugin: https://github.com/navaismo/Octoprint-LCD_E3V3SE.
+- `M115` and `M9000 A1` set `serial_connection_active` (`gcode/host/M115.cpp` hook).
+- `HOST_LINK_UP()` (OctoHost.h) gates pause/resume/load/reheat host prompts in `feature/pause.cpp`: always true without the plugin, only true after the plugin connected otherwise.
+- MeatPack stays on for the host profile. `meatpack.{h,cpp}` are identical to `for_Octoprint`; the emergency-parser state is reset on pack/unpack commands so M876/M108/M410 work with MeatPack. M876 itself is stock upstream (`HOST_PROMPT_SUPPORT`).
+- Remaining plugin DWIN code (`OCTOPRINT_PLUGIN` blocks in `lcd/dwin/creality/dwin.cpp`) is unchanged from `for_Octoprint`: `OctoRefresh`, print-time label, "OctoPrint Connected" title, `Goto_ThumbFinish`.
+- Baseline: RAM 44.8%, flash 47.8% (236,852 B); over the 40%/46% targets, baseline raised on purpose.
+- Verified on device: temperature, pause/stop, command streaming. Not yet verified: thumbnail, finish screen, MeatPack + pause, M600 host prompts. Unresolved: OctoPrint handshake (`N0 M110` got no reply while miniterm worked).

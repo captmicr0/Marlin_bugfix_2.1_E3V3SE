@@ -10,7 +10,7 @@ This repository is a Marlin 2.1.x bugfix fork customized for the Creality Ender-
 | --- | --- | --- |
 | C13 (`BOARD_CREALITY_V3_GD303`, STM32F103RE) | SD card | `for_E3V3SE` |
 | C14 (STM32F401) | SD card | `for_STM32F401` |
-| C13 | OctoPrint / serial host | `for_Octoprint` |
+| C13 | OctoPrint / serial host | `for_Octoprint` (legacy), `c13_octoprint` (profile-based rewrite) |
 | C14 | OctoPrint / serial host | `for_Octoprint_F401` |
 
 Check the active branch and target before changing board-specific configuration or host behavior. The SD-only and host branches do not have identical enabled features.
