@@ -50,6 +50,10 @@
     "STM32F103RET6_creality": {
       "flash": 233980,
       "ram": 29224
+    },
+    "STM32F401RE_creality": {
+      "flash": 230728,
+      "ram": 29012
     }
   }
 }

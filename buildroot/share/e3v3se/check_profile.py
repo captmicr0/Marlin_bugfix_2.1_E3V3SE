@@ -4,7 +4,7 @@ E3V3SE guardrails.
 
   check_profile.py boundary [--update]   fork edits to upstream-owned files must not grow
   check_profile.py build [--update]      firmware RAM/flash must not exceed the baseline
-  check_profile.py config                Configuration*.h must match upstream + profiles/c13_sd (see config_profile.py)
+  check_profile.py config [--profile NAME] Configuration*.h must match upstream + the selected profile
 
 State lives in baseline.json next to this script. "--update" rewrites the baseline,
 and should only be used after a deliberate, reviewed change.
@@ -81,8 +81,10 @@ s = p.add_subparsers(dest="cmd", required=True)
 b = s.add_parser("boundary"); b.add_argument("--upstream", default="upstream/bugfix-2.1.x"); b.add_argument("--update", action="store_true")
 c = s.add_parser("build"); c.add_argument("--env", default="STM32F103RET6_creality")
 c.add_argument("--ram-tol", type=int, default=0); c.add_argument("--flash-tol", type=int, default=512); c.add_argument("--update", action="store_true")
-s.add_parser("config")
+c = s.add_parser("config"); c.add_argument("--profile", default=None)
 a = p.parse_args()
 if a.cmd == "config":
-    sys.exit(subprocess.run([sys.executable, str(HERE / "config_profile.py"), "check"]).returncode)
+    cmd = [sys.executable, str(HERE / "config_profile.py"), "check"]
+    if a.profile: cmd += ["--profile", a.profile]
+    sys.exit(subprocess.run(cmd).returncode)
 sys.exit(boundary(a) if a.cmd == "boundary" else build(a))

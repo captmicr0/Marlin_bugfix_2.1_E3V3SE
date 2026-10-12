@@ -1,6 +1,6 @@
 # Repository memory
 
-This is a point-in-time reference for future work, not a substitute for checking the active branch and current source. Branch refs, hardware configurations, and experiments may change. Facts below were inspected on **2026-10-09** in the working tree at `for_E3V3SE`, commit `4d0510d947` (also `origin/for_E3V3SE`).
+This is a point-in-time reference for future work, not a substitute for checking the active branch and current source. Branch refs, hardware configurations, and experiments may change. C14 migration work began on **2026-10-12** from `c13_sd` commit `e5d0420d23`; verify the active branch and build before treating the C14 path as release-ready.
 
 ## Repository identity and remotes
 
@@ -11,14 +11,15 @@ This is a point-in-time reference for future work, not a substitute for checking
 
 ## Product branch map
 
-> **Update 2026-10-10:** `c13_sd` is now the GitHub default branch. The branches below were renamed with a `legacy/` prefix on the remote (`legacy/for_E3V3SE`, `legacy/for_Octoprint`, `legacy/for_Octoprint_F401`, `legacy/for_STM32F401`). The table keeps the original names as inspected; read them as `legacy/<name>`. Active work: `c13_sd` and `c13_octoprint`.
+> **Update 2026-10-12:** `c13_sd` remains the GitHub default branch. Active product branches are `c13_sd`, `c13_octoprint`, and `c14_sd`. The old product branches were renamed with a `legacy/` prefix on the remote and remain reference-only.
 
 | Branch | Hardware / purpose | Distinctive settings or state observed |
 | --- | --- | --- |
-| `for_E3V3SE` | C13, SD-first firmware | `BOARD_CREALITY_V3_GD303`; `DWIN_RENDER_THUMBNAIL`, `D_ROUTINE_AUTO_OFFSET`, `USE_AUTOZ_TOOL_2`, `ONE_CLICK_PRINT`; current custom DWIN location is `Marlin/src/lcd/dwin/creality/`. |
-| `for_STM32F401` | C14, SD-first firmware | STM32F401; similar auto-offset and thumbnail feature settings, but DWIN lives under `Marlin/src/lcd/e3v2/creality/`; has `Marlin/src/pins/stm32f4/pins_CREALITY_F401.h`. |
-| `for_Octoprint` | C13, serial-host firmware | Adds `FT_MOTION`, `MEATPACK_ON_SERIAL_PORT_1`, and host support; current ref uses the `lcd/dwin/creality` display path. |
-| `for_Octoprint_F401` | C14, serial-host firmware | Host/FT_Motion/MeatPack config on F401; uses the `lcd/e3v2/creality` display path. |
+| `c14_sd` | C14 (STM32F401), SD-first firmware | Active architecture branch. Uses `BOARD_CREALITY_F401RE`, `E3V3SE_C14`, the `STM32F401RE_creality` environment, and the `c14_sd` config profile; its C14 pin map is fork-owned under `Marlin/src/e3v3se/`. It intentionally matches current `c13_sd` motion defaults (715.12 E-steps, FT_MOTION on, LIN_ADVANCE off), not legacy C14's opposite motion-feature selection. Build passes (29,012 B RAM, 230,728 B flash); hardware validation is still required. RAM usage is 44.3%, above the 40% design target. |
+| `legacy/for_E3V3SE` | C13, SD-first firmware | `BOARD_CREALITY_V3_GD303`; historical custom DWIN location is `Marlin/src/lcd/dwin/creality/`. |
+| `legacy/for_STM32F401` | C14, SD-first firmware | Legacy STM32F401 firmware; its custom DWIN lived under `Marlin/src/lcd/e3v2/creality/` and pins are in `Marlin/src/pins/stm32f4/pins_CREALITY_F401.h`. |
+| `legacy/for_Octoprint` | C13, serial-host firmware | Adds `FT_MOTION`, `MEATPACK_ON_SERIAL_PORT_1`, and host support; historical ref uses the `lcd/dwin/creality` display path. |
+| `legacy/for_Octoprint_F401` | C14, serial-host firmware | Historical host/FT_Motion/MeatPack config on F401; uses the `lcd/e3v2/creality` display path. |
 | `for_OctoprintwRender` | Older C13 host/render development line | Historical host UI/rendering work; its source layout and feature state predate the current C13 DWIN path. Do not assume it is interchangeable with `for_Octoprint`. |
 | `Bed_Scale_test` | Experimental bed-scale / host work | Adds `BED_SCALE` and `Marlin/src/module/bed_scale/` plus `Marlin/src/gcode/feature/bed_scale/`; history includes `Bed Scale V2` and several test/refactor commits. Treat as experimental, not a release baseline. |
 | `e3v3se_changes` | Configuration/motion test branch | Its inspected tree had no content difference from `for_E3V3SE` at comparison time; its latest commit message was `Conf_Adv motion test`. Recheck refs before assuming it remains identical. |
@@ -30,7 +31,8 @@ The branch-to-printer/use mapping is also in [`README.md`](./README.md). Histori
 
 - C13's configured board is `BOARD_CREALITY_V3_GD303` (STM32F103RE-class target); the C14 product branches target STM32F401.
 - Common C13 settings include serial port 1 at 115200 baud, IIC BL24CXX EEPROM (2 KB), and a `0x7000` flash/bootloader offset. Confirm the active environment and board pin header before relying on these values.
-- PlatformIO default environment is `STM32F103RET6_creality`; the documented F401 environment is `STM32F401RC_creality`. Environment declarations and inherited build flags live in `ini/stm32f1.ini` and `ini/stm32f4.ini`, with shared processing in `platformio.ini`.
+- PlatformIO default environment is `STM32F103RET6_creality`; C14 uses `STM32F401RE_creality` for `BOARD_CREALITY_F401RE`. Environment declarations and inherited build flags live in `ini/stm32f1.ini` and `ini/stm32f4.ini`, with shared processing in `platformio.ini`.
+- On `c14_sd`, `Marlin/src/pins/pins.h` routes `BOARD_CREALITY_F401RE` through the fork-owned `Marlin/src/e3v3se/pins_CREALITY_F401RE.h` selector. `E3V3SE_C14` selects the migrated C14 wiring in `pins_CREALITY_F401_C14.h`; do not substitute the upstream Ender-5 S1 F401 pin map. The legacy C14 map includes TMC UART on PB12-PB15 and EEPROM I2C on PA7/PA8.
 - The custom pin header `Marlin/src/pins/stm32f1/pins_CREALITY_V3_GD303.h` defines the board's motors, endstops/probe, runout, EEPROM, and HX711 connections. HX711 is wired to PA4 clock and PC6 data in the current C13 setup.
 - Project memory targets documented in the project guidance are RAM below 40% of 64 KB and C13 flash below 46% of 512 KB. Compare results for the actual selected environment; these are design limits, not compiler-enforced assertions.
 
@@ -83,22 +85,26 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 - `Marlin/Config-export.h` is a tracked build artifact; consider untracking.
 
 ## First-boot wizard audit (post upstream merge)
+
 - Wizard state lives in raw BL24CXX bytes 0x01-0x07 (below `EEPROM_OFFSET` 100), so it is independent of Marlin's settings block and survives settings resets/version bumps (same as pre-merge behavior).
 - `EEPROM_VERSION` is V93 both before and after the merge; `SettingsData` layout is unchanged for this config (751 B). `HAS_LEVELING_TEMP_EDIT` is off (needs PROUI), `HAS_MESH_STORAGE` unchanged.
 - Hooks intact: `HMI_Init/Read_Boot_Step_Value`, `HMI_Confirm` -> `M8015 S1`, `M8015.cpp` (`Need_boot_flag`), `G29.cpp` boot-leveling confirm popup.
 - Wizard reruns only when the boot-step byte != `Boot_Step_Max` (blank EEPROM / fresh install). Not retriggered on settings reset (unchanged behavior). Not tested on device.
 
 ## FT_MOTION (C13 SD)
+
 - Enabled via profile overrides (`FT_MOTION`, `FTM_IS_DEFAULT_MOTION`, X shaper NONE, Y 3HEI 42 Hz, X freq 37). Legacy `INPUT_SHAPING_X/Y` removed (replaced by FTM shapers). `LIN_ADVANCE` stays on; upstream FTM supports it natively (`FTM_HAS_LIN_ADVANCE`). Rationale: issue #23 (SD print stalls fixed by FTM).
 - Issue #23 comment also had LIN_ADV and STEALTHCHOP_E off; we kept them on per request. If stalls return, test with them off first.
 - Issue #23 also saw broken Z-offset after FTM: `getZOffset()` (e3v3se/AutoOffset.cpp) now runs under `FTM_DISABLE_IN_SCOPE()`.
 - Baseline: RAM 29,220 B, flash 234,668 B (47.3%, ~1.2 KB under the 46%-of-512KB cap).
 
 ## Bed MINTEMP (flaky/missing bed sensor)
+
 - Origin: commit e10eec2d7b ("false positive thermal protection") used a function-local counter that reset every call, so bed MINTEMP effectively never fired. A later 10-sample debounce re-enabled it and halted printers with bad bed sensors.
 - Now explicit: `E3V3SE_IGNORE_BED_MINTEMP` (Configuration.h, in profile residual) skips only the bed MINTEMP check in `updateTemperaturesFromRawValues()`. BED_MAXTEMP, thermal runaway and heating-failed (WATCH_BED) protections remain active.
 - PATH `pio` (6.1.19) is stale and fails to fetch tool-scons; use `~/.platformio/penv/bin/pio` (6.2.0).
 
 ## Thumbnail renderer extraction
+
 - `DWIN_RenderThumb` and its SD/RLE helpers moved from `lcd/dwin/creality/dwin_lcd.cpp` to `Marlin/src/e3v3se/ThumbRender.cpp` (built via `platformio.ini` filter, guarded by `DWIN_RENDER_THUMBNAIL`). Behavior unchanged; flash +56 B.
 - The thumbnail UI hooks in `dwin.cpp` (ThumbTune menus, `Goto_ThumbPrint`, ~116 `hasThumbnail` branches inside HMI handlers) stay there: they share static state with the handlers and can't be split without a UI rewrite.

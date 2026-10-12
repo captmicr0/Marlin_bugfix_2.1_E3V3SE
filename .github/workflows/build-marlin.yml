@@ -1,6 +1,6 @@
 name: Build E3V3SE Firmware
 
-# c13_sd branch (C13, SD card). The committed configuration of this branch is the starting
+# c14_sd branch (C14, SD card). The committed configuration of this branch is the starting
 # point, and the inputs below only override individual feature defines for this build.
 on:
   workflow_dispatch:
@@ -9,9 +9,9 @@ on:
         description: "PlatformIO environment to compile"
         required: true
         type: choice
-        default: "STM32F103RET6_creality"
+        default: "STM32F401RE_creality"
         options:
-          - STM32F103RET6_creality
+          - STM32F401RE_creality
 
       dwin_render_thumbnail:
         description: "DWIN_RENDER_THUMBNAIL (render G-code thumbnail on the LCD)"

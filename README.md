@@ -4,7 +4,7 @@ An upstream-first Marlin 2.1.x bugfix fork for the **Creality Ender-3 V3 SE**.
 
 The goal of this repository is simple: **pull upstream Marlin at any time without regressions**. All fork-specific behavior is isolated behind a small, auditable boundary, and the machine configuration is generated from pristine upstream files plus a reviewed profile.
 
-> Status: C13 (STM32F103RE) SD-card and OctoPrint profiles are working and verified on hardware. C14 (STM32F401) is the next migration step.
+> Status: C13 SD-card and OctoPrint profiles are verified on hardware. `c14_sd` now compiles for the C14 STM32F401RE target; it still needs printer validation. The latest C14 build uses 29,012 / 65,536 bytes RAM (44.3%) and 230,728 / 448,752 bytes flash (51.4%).
 
 ## Table of Contents
 
@@ -69,7 +69,7 @@ flowchart TB
     UHAL --> BUILD
     E3 --> BUILD
     DWIN --> BUILD
-    BUILD --> FW["Firmware (C13 SD / C13 OctoPrint)"]
+    BUILD --> FW["Firmware (C13 SD / C13 OctoPrint / C14 SD)"]
 
     GB -. checks .-> UCORE
     GC -. checks .-> CFG
@@ -84,8 +84,9 @@ Upstream code flows in untouched, the machine configuration is generated from it
 | --- | --- | --- |
 | `c13_sd` | C13 (STM32F103RE), SD card | Main line. Mirror of the former `architecture/e3v3se-upstream-seams`. |
 | `c13_octoprint` | C13, serial host (OctoPrint) | `c13_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol. |
+| `c14_sd` | C14 (STM32F401), SD card | C14 SD profile, derived from the upstream-first architecture; uses `BOARD_CREALITY_F401RE`. |
 | `legacy/for_E3V3SE`, `legacy/for_Octoprint` | C13 | Pre-architecture branches, kept for reference only. |
-| `legacy/for_STM32F401`, `legacy/for_Octoprint_F401` | C14 (STM32F401) | Pre-architecture branches. They remain the only C14 firmware until C14 is migrated to the profile system. |
+| `legacy/for_STM32F401`, `legacy/for_Octoprint_F401` | C14 (STM32F401) | Pre-architecture C14 branches, kept for reference only. |
 
 `c13_sd` is the default branch. The `legacy/` branches are frozen and no longer receive upstream merges.
 
@@ -101,6 +102,7 @@ Marlin/
       AutoOffset.*, G212.cpp, M8015.cpp    Automatic Z-offset (load cell / CRTouch)
       ThumbRender.cpp                      G-code thumbnail renderer for the DWIN display
       OctoHost.*                           OctoPrint plugin layer (c13_octoprint)
+      pins_CREALITY_F401*.h                 C14-specific pin map and selector
     lcd/dwin/creality/                   Fork-owned DWIN UI for the V3 SE
     ...                                  Everything else follows upstream Marlin
 buildroot/share/e3v3se/
@@ -123,22 +125,26 @@ A profile is the difference between upstream's configuration files and the machi
 - `residual.*.patch` carries options and blocks that do not exist upstream.
 
 ```sh
-# Regenerate the profile after editing Configuration*.h by hand
-python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd derive
+# Regenerate this branch's profile after editing Configuration*.h by hand
+python3 buildroot/share/e3v3se/config_profile.py derive
 
 # Verify the files equal upstream + profile
-python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd check
+python3 buildroot/share/e3v3se/config_profile.py check
 
 # Rebuild the files from upstream + profile (after taking upstream's versions)
-python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd apply
+python3 buildroot/share/e3v3se/config_profile.py apply
 
 # List upstream options that the profile disables (review after a merge)
-python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd stale
+python3 buildroot/share/e3v3se/config_profile.py stale
 ```
 
 Without `--profile`, the tools use the name stored in `buildroot/share/e3v3se/active_profile`.
 
-This branch uses the `c13_sd` profile. The `c13_octoprint` branch adds `OCTOPRINT_PLUGIN` and `MEATPACK_ON_SERIAL_PORT_1`, and turns `ONE_CLICK_PRINT` off.
+This branch uses the `c14_sd` profile. It shares the SD feature set with `c13_sd` while selecting the F401 board. The `c13_octoprint` branch adds `OCTOPRINT_PLUGIN` and `MEATPACK_ON_SERIAL_PORT_1`, and turns `ONE_CLICK_PRINT` off.
+
+The C14 profile intentionally matches current `c13_sd` motion defaults: `DEFAULT_AXIS_STEPS_PER_UNIT` uses 715.12 E-steps, `FT_MOTION` is enabled, and legacy `LIN_ADVANCE` is disabled. The old C14 branch had the opposite `FT_MOTION` / `LIN_ADVANCE` selection; verify extrusion and motion on the printer before treating this migration as hardware-validated.
+
+For C14, `BOARD_CREALITY_F401RE` and `E3V3SE_C14` route through the fork-owned `Marlin/src/e3v3se/pins_CREALITY_F401_C14.h`. This preserves the C14-specific EEPROM, probe, SD, TMC UART, and HX711 wiring instead of using the upstream F401 pin map for a different Creality printer.
 
 ## Enabling and disabling features by hand
 
@@ -147,13 +153,13 @@ Features are plain Marlin defines. To toggle one, edit `Marlin/Configuration.h` 
 1. **Edit the define.** Comment it out (`//#define FEATURE`) to disable it, or remove the `//` to enable it. Options that carry a value keep it on the same line.
 2. **Regenerate the profile** for the branch you are on:
    ```sh
-   python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd derive
-   python3 buildroot/share/e3v3se/config_profile.py --profile c13_sd check
+   python3 buildroot/share/e3v3se/config_profile.py derive
+   python3 buildroot/share/e3v3se/config_profile.py check
    ```
 3. **Build and check size**, then commit and run the guardrails:
    ```sh
-   pio run -e STM32F103RET6_creality
-   python3 buildroot/share/e3v3se/check_profile.py build
+   pio run -e STM32F401RE_creality
+   python3 buildroot/share/e3v3se/check_profile.py build --env STM32F401RE_creality
    ```
 4. If flash or RAM grew on purpose, update the baseline with `check_profile.py build --update` after reviewing the change.
 
@@ -210,7 +216,7 @@ Factory defaults: X none at 37 Hz, Y 3HEI at 42 Hz. To change them, edit `FTM_DE
 
 There are two independent Linear Advance implementations, and this fork uses the FT_Motion one.
 
-| | Legacy `LIN_ADVANCE` | FT_Motion built-in advance |
+|  | Legacy `LIN_ADVANCE` | FT_Motion built-in advance |
 | --- | --- | --- |
 | Enabled by | `#define LIN_ADVANCE` (commented out in this fork) | Automatically, whenever `FT_MOTION` is on and the machine has extruders |
 | Where it runs | Stepper ISR, per planner block | Trajectory generator (1 kHz), added to the extruder position |
@@ -232,8 +238,8 @@ The guardrails compare against `HEAD`, so commit before running them.
 
 ```sh
 python3 buildroot/share/e3v3se/check_profile.py boundary   # edits to upstream-owned files must not grow
-python3 buildroot/share/e3v3se/check_profile.py config     # config files match upstream + profile
-python3 buildroot/share/e3v3se/check_profile.py build      # RAM/flash must not exceed the baseline
+python3 buildroot/share/e3v3se/check_profile.py config     # config files match upstream + active profile
+python3 buildroot/share/e3v3se/check_profile.py build --env STM32F401RE_creality
 ```
 
 Use `--update` only after a deliberate, reviewed change. A new edit to an upstream-owned file has to be added to the boundary list in `baseline.json` on purpose.
@@ -257,13 +263,9 @@ The `c13_octoprint` profile enables the host layer in `Marlin/src/e3v3se/OctoHos
 
 ## Bed minimum-temperature safety override
 
-The C13 profiles enable `E3V3SE_IGNORE_BED_MINTEMP` in `Configuration.h` for
-machines with an intermittent or missing bed sensor. This suppresses only the
-bed `MINTEMP` shutdown. `BED_MAXTEMP`, thermal runaway protection, and the bed
-heating-failed (`WATCH_BED`) protection remain active.
+The C13 SD and C14 SD profiles leave `E3V3SE_IGNORE_BED_MINTEMP` disabled in `Configuration.h`. For machines with an intermittent or missing bed sensor, it can be enabled by hand after reviewing the risk. This suppresses only the bed `MINTEMP` shutdown; `BED_MAXTEMP`, thermal runaway protection, and the bed heating-failed (`WATCH_BED`) protection remain active.
 
-This override should not be enabled when the bed sensor is required for safe
-operation. A disconnected sensor can otherwise go unnoticed.
+This override should not be enabled when the bed sensor is required for safe operation. A disconnected sensor can otherwise go unnoticed.
 
 ## Building
 
@@ -271,14 +273,14 @@ PlatformIO is the build system. Use a recent PlatformIO Core (6.2 or newer).
 
 ```sh
 pio run -e STM32F103RET6_creality    # C13
-pio run -e STM32F401RC_creality      # C14 (`legacy/for_STM32F401`, `legacy/for_Octoprint_F401`)
+pio run -e STM32F401RE_creality      # C14 SD (c14_sd)
 ```
 
 Native unit tests and the upstream build tests are available through the Makefile (`make unit-test-all-local`, `make tests-all-local`).
 
 ## Memory budget
 
-Flash and RAM are hard limits on the STM32F103RE (512 KB flash, 64 KB RAM). The reviewed baseline is stored in `buildroot/share/e3v3se/baseline.json`; the `build` guardrail fails when firmware grows beyond it. Check usage after enabling or adding a feature.
+Flash and RAM are hard limits on each MCU. The C14 build currently uses 44.3% of RAM, above the project's 40% design target; the build-size baseline is a regression guard, not a claim that the target has been met. Per-environment baselines are stored in `buildroot/share/e3v3se/baseline.json`; the `build` guardrail fails when firmware grows beyond its recorded baseline.
 
 ## Further documentation
 

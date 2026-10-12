@@ -9,21 +9,21 @@ This repository is a Marlin 2.1.x bugfix fork customized for the Creality Ender-
 | Hardware | Use | Branch |
 | --- | --- | --- |
 | C13 (`BOARD_CREALITY_V3_GD303`, STM32F103RE) | SD card | `legacy/for_E3V3SE` |
-| C14 (STM32F401) | SD card | `legacy/for_STM32F401` |
+| C14 (STM32F401) | SD card | `c14_sd` |
 | C13 | OctoPrint / serial host | `legacy/for_Octoprint` |
 | C14 | OctoPrint / serial host | `legacy/for_Octoprint_F401` |
 
-These are the pre-architecture `legacy/` branches. Current work happens on `c13_sd` (default, C13 SD) and `c13_octoprint` (C13 host); C14 is not yet migrated.
+The `legacy/` branches are pre-architecture references. Current product work happens on `c13_sd` (default, C13 SD), `c13_octoprint` (C13 host), and `c14_sd` (C14 SD). C14 OctoPrint remains on the legacy branch until separately migrated.
 
 Check the active branch and target before changing board-specific configuration or host behavior. The SD-only and host branches do not have identical enabled features.
 
 ## Build, test, and validation
 
-PlatformIO is the firmware build system. The default environment is the C13 target:
+PlatformIO is the firmware build system. The default PlatformIO environment is the C13 target. On this branch, explicitly build the C14 environment:
 
 ```sh
 pio run -e STM32F103RET6_creality
-pio run -e STM32F401RC_creality
+pio run -e STM32F401RE_creality
 make marlin
 ```
 
@@ -76,5 +76,5 @@ Board wiring and board-specific capabilities are defined in `Marlin/src/pins/`, 
 - Firmware memory is a hard design constraint: keep RAM below 40% of 64 KB and C13 flash below 46% of 512 KB. Check memory usage after builds, especially when enabling or adding features.
 - Keep hardware-specific changes consistent with the intended branch and board. C13 uses an STM32F103RE, UART1 at 115200 baud, IIC BL24CXX EEPROM (2 KB at `0x800`), and a `0x7000` bootloader offset; C14 uses STM32F401.
 - Custom features include DWIN thumbnail rendering (`DWIN_RENDER_THUMBNAIL`), one-click printing (`ONE_CLICK_PRINT`), Delta/X Z-offset routines, FT_Motion/input shaping, Linear Advance, the HX711 load cell (PA4 clock, PC6 data), CRTouch, LCD dimmer/brightness controls, filament runout handling, and the compact 6×6 leveling grid. Trace both configuration guards and runtime/UI call sites before changing one.
-- The pull request branch and target-specific firmware behavior are documented in [`README.md`](../README.md); the test layout and unit-test model are described in [`test/README.md`](../test/README.md).
+- The active C14 SD profile is `c14_sd` and selects `BOARD_CREALITY_F401RE`; build it with `STM32F401RE_creality`. The C13 SD/host configurations and C14 host firmware have separate profiles or remain on legacy branches. The branch-to-target map is documented in [`README.md`](../README.md).
 - Prebuilt C13 firmware images are under `FW_HWC13/`; serial debugging support is in `Serial_Debugger/serial_util.py`.
