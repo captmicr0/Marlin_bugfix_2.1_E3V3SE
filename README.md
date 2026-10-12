@@ -4,7 +4,7 @@ An upstream-first Marlin 2.1.x bugfix fork for the **Creality Ender-3 V3 SE**.
 
 The goal of this repository is simple: **pull upstream Marlin at any time without regressions**. All fork-specific behavior is isolated behind a small, auditable boundary, and the machine configuration is generated from pristine upstream files plus a reviewed profile.
 
-> Status: C13 SD-card and OctoPrint profiles are verified on hardware. Both C14 profiles compile for STM32F401RE but still need printer validation. Profile-default builds use 29,012 B RAM / 230,728 B flash (`c14_sd`) and 29,336 B RAM / 232,896 B flash (`c14_octoprint`). The GitHub Actions default dispatch enables additional DWIN menu options on C14 OctoPrint, building to 29,360 B RAM / 238,240 B flash; changing dispatch options changes the size.
+> Status: this is the `c14_octoprint` branch (C14, OctoPrint host). It builds for STM32F401RE and is awaiting printer validation. Profile-default builds use 29,336 B RAM / 232,896 B flash; the GitHub Actions default dispatch enables additional DWIN menu options and builds to 29,360 B RAM / 238,240 B flash. Changing dispatch options changes the size.
 
 ## Table of Contents
 
@@ -83,12 +83,12 @@ Upstream code flows in untouched, the machine configuration is generated from it
 
 | Branch | Hardware | Purpose |
 | --- | --- | --- |
-| `c13_sd` | C13 (STM32F103RE), SD card | Main line. Mirror of the former `architecture/e3v3se-upstream-seams`. |
-| `c13_octoprint` | C13, serial host (OctoPrint) | `c13_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol. |
-| `c14_sd` | C14 (STM32F401), SD card | C14 SD profile, derived from the upstream-first architecture; uses `BOARD_CREALITY_F401RE`. |
-| `c14_octoprint` | C14 (STM32F401), serial host (OctoPrint) | C14 profile plus the OctoPrint plugin layer and MeatPack; `ONE_CLICK_PRINT` is off. Builds with `STM32F401RE_creality`; printer validation is pending. |
+| `c13_sd` | C13 (STM32F103RE), SD card | Main line and default branch. Upstream-first architecture with the C13 SD profile. |
+| `c13_octoprint` | C13 (STM32F103RE), serial host (OctoPrint) | `c13_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol; `ONE_CLICK_PRINT` is off. |
+| `c14_sd` | C14 (STM32F401RE), SD card | C14 SD profile; uses `BOARD_CREALITY_F401RE` and the `STM32F401RE_creality` environment. |
+| `c14_octoprint` | C14 (STM32F401RE), serial host (OctoPrint) | **This branch.** `c14_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol; `ONE_CLICK_PRINT` is off. |
 | `legacy/for_E3V3SE`, `legacy/for_Octoprint` | C13 | Pre-architecture branches, kept for reference only. |
-| `legacy/for_STM32F401`, `legacy/for_Octoprint_F401` | C14 (STM32F401) | Pre-architecture C14 branches, kept for reference only. |
+| `legacy/for_STM32F401`, `legacy/for_Octoprint_F401` | C14 (STM32F401) | Pre-architecture branches, kept for reference only. |
 
 `c13_sd` is the default branch. The `legacy/` branches are frozen and no longer receive upstream merges.
 
@@ -144,7 +144,7 @@ Without `--profile`, the tools use the name stored in `buildroot/share/e3v3se/ac
 
 This branch uses the `c14_octoprint` profile. It preserves the C14 board and wiring from `c14_sd`, enables `OCTOPRINT_PLUGIN` and `MEATPACK_ON_SERIAL_PORT_1`, and disables `ONE_CLICK_PRINT` by default. The corresponding C13 host profile is `c13_octoprint`.
 
-The C14 profile intentionally matches current `c13_sd` motion defaults: `DEFAULT_AXIS_STEPS_PER_UNIT` uses 715.12 E-steps, `FT_MOTION` is enabled, and legacy `LIN_ADVANCE` is disabled. The old C14 branch had the opposite `FT_MOTION` / `LIN_ADVANCE` selection; verify extrusion and motion on the printer before treating this migration as hardware-validated.
+The C14 profile intentionally matches current `c13_sd` motion defaults: `DEFAULT_AXIS_STEPS_PER_UNIT` uses 715.12 E-steps, `FT_MOTION` is enabled, and legacy `LIN_ADVANCE` is disabled. The legacy C14 branches had the opposite `FT_MOTION` / `LIN_ADVANCE` selection; verify extrusion and motion on the printer, because the C14 profile is not yet hardware-validated.
 
 For C14, `BOARD_CREALITY_F401RE` and `E3V3SE_C14` route through the fork-owned `Marlin/src/e3v3se/pins_CREALITY_F401_C14.h`. This preserves the C14-specific EEPROM, probe, SD, TMC UART, and HX711 wiring instead of using the upstream F401 pin map for a different Creality printer.
 
