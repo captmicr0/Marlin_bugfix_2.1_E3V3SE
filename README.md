@@ -83,10 +83,12 @@ Upstream code flows in untouched, the machine configuration is generated from it
 
 | Branch | Hardware | Purpose |
 | --- | --- | --- |
-| `c13_sd` | C13 (STM32F103RE), SD card | Main line. Mirror of the former `architecture/e3v3se-upstream-seams`. |
-| `c13_octoprint` | C13, serial host (OctoPrint) | **This branch.** `c13_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol. |
+| `c13_sd` | C13 (STM32F103RE), SD card | Main line and default branch. Upstream-first architecture with the C13 SD profile. |
+| `c13_octoprint` | C13 (STM32F103RE), serial host (OctoPrint) | **This branch.** `c13_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol; `ONE_CLICK_PRINT` is off. |
+| `c14_sd` | C14 (STM32F401RE), SD card | C14 SD profile; uses `BOARD_CREALITY_F401RE` and the `STM32F401RE_creality` environment. |
+| `c14_octoprint` | C14 (STM32F401RE), serial host (OctoPrint) | `c14_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol; `ONE_CLICK_PRINT` is off. |
 | `legacy/for_E3V3SE`, `legacy/for_Octoprint` | C13 | Pre-architecture branches, kept for reference only. |
-| `legacy/for_STM32F401`, `legacy/for_Octoprint_F401` | C14 (STM32F401) | Pre-architecture branches. They remain the only C14 firmware until C14 is migrated to the profile system. |
+| `legacy/for_STM32F401`, `legacy/for_Octoprint_F401` | C14 (STM32F401) | Pre-architecture branches, kept for reference only. |
 
 `c13_sd` is the default branch. The `legacy/` branches are frozen and no longer receive upstream merges.
 
