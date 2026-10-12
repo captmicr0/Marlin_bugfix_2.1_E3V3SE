@@ -19,6 +19,7 @@ The goal of this repository is simple: **pull upstream Marlin at any time withou
 - [Merging upstream](#merging-upstream)
 - [Host (OctoPrint) integration](#host-octoprint-integration)
 - [Building](#building)
+  - [Building with GitHub Actions](#building-with-github-actions)
 - [Memory budget](#memory-budget)
 - [Further documentation](#further-documentation)
 - [Marlin upstream README](#marlin-3d-printer-firmware)
@@ -272,11 +273,22 @@ This override should not be enabled when the bed sensor is required for safe ope
 PlatformIO is the build system. Use a recent PlatformIO Core (6.2 or newer).
 
 ```sh
-pio run -e STM32F103RET6_creality    # C13
-pio run -e STM32F401RE_creality      # C14 SD (c14_sd)
+pio run -e STM32F401RE_creality      # C14 (c14_sd)
 ```
 
 Native unit tests and the upstream build tests are available through the Makefile (`make unit-test-all-local`, `make tests-all-local`).
+
+### Building with GitHub Actions
+
+The `c14_sd` branch (C14 SD card) ships a manual workflow, [`build-marlin.yml`](.github/workflows/build-marlin.yml), that compiles the firmware on GitHub so no local toolchain is needed. Fork the repository first; Actions run in your own fork.
+
+1. Open your fork on GitHub, go to **Actions**, and select **Build E3V3SE Firmware**. If workflows are disabled in the fork, click **I understand my workflows, go ahead and enable them**.
+2. Click **Run workflow** and choose the `c14_sd` branch.
+3. Keep the environment at `STM32F401RE_creality` and set the feature toggles you want (thumbnails, Z-offset routines, FT_Motion, DWIN menus, preheat labels and so on). The defaults match the committed configuration of this branch: `ONE_CLICK_PRINT` on; MeatPack off.
+4. Click **Run workflow** and wait for the job to finish. The log ends with a RAM and flash usage report.
+5. Download the `firmware-c14_sd-STM32F401RE_creality` artifact from the run summary. It contains the `firmware*.bin` file and is kept for 7 days.
+
+Each toggle only overrides the matching define for that single build; nothing is committed back to the repository. To make a choice permanent, edit the profile as described in [Configuration profiles](#configuration-profiles). Check the reported memory usage against the [Memory budget](#memory-budget) before flashing, and enable `DWIN_INPUT_SHAPING_MENU` only together with `FT_MOTION`, and `DWIN_SKEW_MENU` only together with `SKEW_CORRECTION`.
 
 ## Memory budget
 

@@ -27,6 +27,8 @@ pio run -e STM32F401RE_creality
 make marlin
 ```
 
+The manual GitHub Actions workflow `.github/workflows/build-marlin.yml` builds this branch (`c14_sd`) in CI: it starts from the committed configuration, applies the feature toggles chosen in the run dialog through `.github/scripts/apply_marlin_options.py`, and uploads `firmware*.bin` as an artifact. Keep the workflow inputs and defaults in sync with the branch profile.
+
 `make marlin` invokes `buildroot/bin/mftest -a` and builds the configured environments. Environment definitions are in `ini/stm32f1.ini` and `ini/stm32f4.ini`; common configuration and source filters are in `platformio.ini`.
 
 Tests are split between native unit tests and firmware build tests:
