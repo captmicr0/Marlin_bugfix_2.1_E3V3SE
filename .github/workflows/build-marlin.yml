@@ -33,10 +33,6 @@ on:
         description: "FT_MOTION (fixed-time motion and shapers)"
         type: boolean
         default: true
-      lin_advance:
-        description: "LIN_ADVANCE (Linear Advance)"
-        type: boolean
-        default: false
       dwin_input_shaping_menu:
         description: "DWIN_INPUT_SHAPING_MENU (requires FT_MOTION)"
         type: boolean
@@ -97,7 +93,6 @@ jobs:
             D_ROUTINE_AUTO_OFFSET=${{ inputs.d_routine_auto_offset }} \
             X_ROUTINE_AUTO_OFFSET=${{ inputs.x_routine_auto_offset }} \
             FT_MOTION=${{ inputs.ft_motion }} \
-            LIN_ADVANCE=${{ inputs.lin_advance }} \
             DWIN_INPUT_SHAPING_MENU=${{ inputs.dwin_input_shaping_menu }} \
             DWIN_DIMM_MENU=${{ inputs.dwin_dimm_menu }} \
             DWIN_ZHOME_MENU=${{ inputs.dwin_zhome_menu }} \
