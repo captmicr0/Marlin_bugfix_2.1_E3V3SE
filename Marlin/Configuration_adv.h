@@ -1873,7 +1873,7 @@
 
   //#define MENU_ADDAUTOSTART               // Add a menu option to run auto#.g files
 
-  #define ONE_CLICK_PRINT// Prompt to print the newest file on inserted media
+  //#define ONE_CLICK_PRINT                 // Prompt to print the newest file on inserted media
   #if ENABLED(ONE_CLICK_PRINT)
     #define NO_SD_AUTOSTART                 // Remove auto#.g file support completely to save some Flash, SRAM
   #endif
@@ -4206,7 +4206,7 @@
 /**
  * Support for MeatPack G-code compression (https://github.com/scottmudge/OctoPrint-MeatPack)
  */
-//#define MEATPACK_ON_SERIAL_PORT_1
+#define MEATPACK_ON_SERIAL_PORT_1
 //#define MEATPACK_ON_SERIAL_PORT_2
 
 //#define GCODE_CASE_INSENSITIVE  // Accept G-code sent to the firmware in lowercase

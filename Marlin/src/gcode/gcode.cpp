@@ -1172,6 +1172,11 @@ void GcodeSuite::process_parsed_command(bool no_ok/*=false*/) {
         case 8015: M8015(); break; // M8015: One key to obtain the Z offset value
       // #endif
 
+      #if ENABLED(OCTOPRINT_PLUGIN)
+        case 9000: M9000(); break;                                // M9000: OctoPrint plugin connection and print details
+        case 9001: M9001(); break;                                // M9001: OctoPrint plugin thumbnail transfer
+      #endif
+
       default: parser.unknown_command_warning(); break;
     }
     break;

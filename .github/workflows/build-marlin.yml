@@ -1,6 +1,6 @@
 name: Build E3V3SE Firmware
 
-# c14_sd branch (C14, SD card). The committed configuration of this branch is the starting
+# c14_octoprint branch (C14, OctoPrint host). The committed configuration of this branch is the starting
 # point, and the inputs below only override individual feature defines for this build.
 on:
   workflow_dispatch:
@@ -18,9 +18,9 @@ on:
         type: boolean
         default: true
       one_click_print:
-        description: "ONE_CLICK_PRINT (SD card only; keep off for OctoPrint)"
+        description: "ONE_CLICK_PRINT (SD card only; off for OctoPrint)"
         type: boolean
-        default: true
+        default: false
       d_routine_auto_offset:
         description: "D_ROUTINE_AUTO_OFFSET (Z offset, Delta pattern)"
         type: boolean
@@ -65,10 +65,14 @@ on:
         description: "DWIN_SKEW_MENU (requires SKEW_CORRECTION)"
         type: boolean
         default: false
+      octoprint_plugin:
+        description: "OCTOPRINT_PLUGIN (Octoprint-LCD_E3V3SE plugin layer)"
+        type: boolean
+        default: true
       meatpack:
         description: "MEATPACK_ON_SERIAL_PORT_1 (host transmission compression)"
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read
@@ -105,6 +109,7 @@ jobs:
             DWIN_CUSTOM_EXTRUDE=${{ inputs.dwin_custom_extrude }} \
             SKEW_CORRECTION=${{ inputs.skew_correction }} \
             DWIN_SKEW_MENU=${{ inputs.dwin_skew_menu }} \
+            OCTOPRINT_PLUGIN=${{ inputs.octoprint_plugin }} \
             MEATPACK_ON_SERIAL_PORT_1=${{ inputs.meatpack }}
 
       - name: Compile firmware

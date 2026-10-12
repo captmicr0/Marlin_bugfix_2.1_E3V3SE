@@ -4,7 +4,7 @@ An upstream-first Marlin 2.1.x bugfix fork for the **Creality Ender-3 V3 SE**.
 
 The goal of this repository is simple: **pull upstream Marlin at any time without regressions**. All fork-specific behavior is isolated behind a small, auditable boundary, and the machine configuration is generated from pristine upstream files plus a reviewed profile.
 
-> Status: C13 SD-card and OctoPrint profiles are verified on hardware. `c14_sd` now compiles for the C14 STM32F401RE target; it still needs printer validation. The latest C14 build uses 29,012 / 65,536 bytes RAM (44.3%) and 230,728 / 448,752 bytes flash (51.4%).
+> Status: C13 SD-card and OctoPrint profiles are verified on hardware. Both C14 profiles compile for STM32F401RE but still need printer validation. Profile-default builds use 29,012 B RAM / 230,728 B flash (`c14_sd`) and 29,336 B RAM / 232,896 B flash (`c14_octoprint`). The GitHub Actions default dispatch enables additional DWIN menu options on C14 OctoPrint, building to 29,360 B RAM / 238,240 B flash; changing dispatch options changes the size.
 
 ## Table of Contents
 
@@ -69,7 +69,7 @@ flowchart TB
     UHAL --> BUILD
     E3 --> BUILD
     DWIN --> BUILD
-    BUILD --> FW["Firmware (C13 SD / C13 OctoPrint / C14 SD)"]
+    BUILD --> FW["Firmware (C13 SD / C13 OctoPrint / C14 SD / C14 OctoPrint)"]
 
     GB -. checks .-> UCORE
     GC -. checks .-> CFG
@@ -85,6 +85,7 @@ Upstream code flows in untouched, the machine configuration is generated from it
 | `c13_sd` | C13 (STM32F103RE), SD card | Main line. Mirror of the former `architecture/e3v3se-upstream-seams`. |
 | `c13_octoprint` | C13, serial host (OctoPrint) | `c13_sd` plus the host layer, MeatPack and the OctoPrint plugin protocol. |
 | `c14_sd` | C14 (STM32F401), SD card | C14 SD profile, derived from the upstream-first architecture; uses `BOARD_CREALITY_F401RE`. |
+| `c14_octoprint` | C14 (STM32F401), serial host (OctoPrint) | C14 profile plus the OctoPrint plugin layer and MeatPack; `ONE_CLICK_PRINT` is off. Builds with `STM32F401RE_creality`; printer validation is pending. |
 | `legacy/for_E3V3SE`, `legacy/for_Octoprint` | C13 | Pre-architecture branches, kept for reference only. |
 | `legacy/for_STM32F401`, `legacy/for_Octoprint_F401` | C14 (STM32F401) | Pre-architecture C14 branches, kept for reference only. |
 
@@ -101,7 +102,7 @@ Marlin/
     e3v3se/                              Fork-owned features (isolated from upstream)
       AutoOffset.*, G212.cpp, M8015.cpp    Automatic Z-offset (load cell / CRTouch)
       ThumbRender.cpp                      G-code thumbnail renderer for the DWIN display
-      OctoHost.*                           OctoPrint plugin layer (c13_octoprint)
+      OctoHost.*                           OctoPrint plugin layer (C13/C14 host branches)
       pins_CREALITY_F401*.h                 C14-specific pin map and selector
     lcd/dwin/creality/                   Fork-owned DWIN UI for the V3 SE
     ...                                  Everything else follows upstream Marlin
@@ -140,7 +141,7 @@ python3 buildroot/share/e3v3se/config_profile.py stale
 
 Without `--profile`, the tools use the name stored in `buildroot/share/e3v3se/active_profile`.
 
-This branch uses the `c14_sd` profile. It shares the SD feature set with `c13_sd` while selecting the F401 board. The `c13_octoprint` branch adds `OCTOPRINT_PLUGIN` and `MEATPACK_ON_SERIAL_PORT_1`, and turns `ONE_CLICK_PRINT` off.
+This branch uses the `c14_octoprint` profile. It preserves the C14 board and wiring from `c14_sd`, enables `OCTOPRINT_PLUGIN` and `MEATPACK_ON_SERIAL_PORT_1`, and disables `ONE_CLICK_PRINT` by default. The corresponding C13 host profile is `c13_octoprint`.
 
 The C14 profile intentionally matches current `c13_sd` motion defaults: `DEFAULT_AXIS_STEPS_PER_UNIT` uses 715.12 E-steps, `FT_MOTION` is enabled, and legacy `LIN_ADVANCE` is disabled. The old C14 branch had the opposite `FT_MOTION` / `LIN_ADVANCE` selection; verify extrusion and motion on the printer before treating this migration as hardware-validated.
 
@@ -254,16 +255,17 @@ Use `--update` only after a deliberate, reviewed change. A new edit to an upstre
 
 ## Host (OctoPrint) integration
 
-The `c13_octoprint` profile enables the host layer in `Marlin/src/e3v3se/OctoHost.*`, designed for the [OctoPrint-LCD_E3V3SE](https://github.com/navaismo/Octoprint-LCD_E3V3SE) plugin:
+The `c13_octoprint` and `c14_octoprint` profiles enable the host layer in `Marlin/src/e3v3se/OctoHost.*`, designed for the [OctoPrint-LCD_E3V3SE](https://github.com/navaismo/OctoPrint-LCD_E3V3SE) plugin:
 
 - `M9000` drives the print and finish screens and the print details (file name, time, progress).
 - `M9001` streams the thumbnail (RGB565, 96 px wide) line by line.
 - `M115` or `M9000 A1` marks the host as connected. `HOST_LINK_UP()` then enables host prompts for pause, resume and filament change; without the plugin, stock upstream behavior is kept.
 - MeatPack is enabled and the emergency parser is kept in sync with it, so `M876`, `M108` and `M410` keep working.
+- `ONE_CLICK_PRINT` is disabled by default because it is an SD-card workflow. The C14 host branch compiles for `STM32F401RE_creality`; its host/plugin behavior has not yet been validated on a C14 printer.
 
 ## Bed minimum-temperature safety override
 
-The C13 SD and C14 SD profiles leave `E3V3SE_IGNORE_BED_MINTEMP` disabled in `Configuration.h`. For machines with an intermittent or missing bed sensor, it can be enabled by hand after reviewing the risk. This suppresses only the bed `MINTEMP` shutdown; `BED_MAXTEMP`, thermal runaway protection, and the bed heating-failed (`WATCH_BED`) protection remain active.
+The C13 SD, C13 OctoPrint, C14 SD, and C14 OctoPrint profiles leave `E3V3SE_IGNORE_BED_MINTEMP` disabled in `Configuration.h`. For machines with an intermittent or missing bed sensor, it can be enabled by hand after reviewing the risk. This suppresses only the bed `MINTEMP` shutdown; `BED_MAXTEMP`, thermal runaway protection, and the bed heating-failed (`WATCH_BED`) protection remain active.
 
 This override should not be enabled when the bed sensor is required for safe operation. A disconnected sensor can otherwise go unnoticed.
 
@@ -273,7 +275,7 @@ PlatformIO is the build system. Use a recent PlatformIO Core (6.2 or newer).
 
 ```sh
 pio run -e STM32F103RET6_creality    # C13
-pio run -e STM32F401RE_creality      # C14 SD (c14_sd)
+pio run -e STM32F401RE_creality      # C14 SD (c14_sd) or OctoPrint (c14_octoprint)
 ```
 
 Native unit tests and the upstream build tests are available through the Makefile (`make unit-test-all-local`, `make tests-all-local`).

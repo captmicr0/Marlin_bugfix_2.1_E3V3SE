@@ -68,6 +68,7 @@ lin 3D Printer Firmware
 #endif
 
 #include "../../../e3v3se/AutoOffset.h"
+#include "../../../e3v3se/OctoHost.h"
 
 // #include <QRCodeGenerator.h>
 

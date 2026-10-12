@@ -4,8 +4,8 @@
 Usage: apply_marlin_options.py NAME=true|false [NAME=true|false ...]
 
 The macro is searched in Configuration.h and Configuration_adv.h. Disabling a macro that does
-not exist is a no-op; enabling one that does not exist is an error (for example OCTOPRINT_PLUGIN
-only exists on the c13_octoprint branch).
+not exist is a no-op; enabling one that does not exist is an error. OCTOPRINT_PLUGIN is present
+only in the OctoPrint profiles.
 """
 import re
 import sys

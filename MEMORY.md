@@ -11,11 +11,12 @@ This is a point-in-time reference for future work, not a substitute for checking
 
 ## Product branch map
 
-> **Update 2026-10-12:** `c13_sd` remains the GitHub default branch. Active product branches are `c13_sd`, `c13_octoprint`, and `c14_sd`. The old product branches were renamed with a `legacy/` prefix on the remote and remain reference-only.
+> **Update 2026-10-12:** `c13_sd` remains the GitHub default branch. Active product branches are `c13_sd`, `c13_octoprint`, `c14_sd`, and `c14_octoprint`. The old product branches were renamed with a `legacy/` prefix on the remote and remain reference-only.
 
 | Branch | Hardware / purpose | Distinctive settings or state observed |
 | --- | --- | --- |
 | `c14_sd` | C14 (STM32F401), SD-first firmware | Active architecture branch. Uses `BOARD_CREALITY_F401RE`, `E3V3SE_C14`, the `STM32F401RE_creality` environment, and the `c14_sd` config profile; its C14 pin map is fork-owned under `Marlin/src/e3v3se/`. It intentionally matches current `c13_sd` motion defaults (715.12 E-steps, FT_MOTION on, LIN_ADVANCE off), not legacy C14's opposite motion-feature selection. Build passes (29,012 B RAM, 230,728 B flash); hardware validation is still required. RAM usage is 44.3%, above the 40% design target. |
+| `c14_octoprint` | C14 (STM32F401), serial-host firmware | Migrated from `c14_sd` with the OctoPrint `M9000`/`M9001` plugin layer, host-aware pause/filament prompts, and MeatPack enabled; `ONE_CLICK_PRINT` is off by default. Uses `BOARD_CREALITY_F401RE`, `E3V3SE_C14`, and `STM32F401RE_creality`. Build passes (29,336 B RAM, 232,896 B flash); printer validation is still required. RAM usage is 44.8%, above the 40% design target. |
 | `legacy/for_E3V3SE` | C13, SD-first firmware | `BOARD_CREALITY_V3_GD303`; historical custom DWIN location is `Marlin/src/lcd/dwin/creality/`. |
 | `legacy/for_STM32F401` | C14, SD-first firmware | Legacy STM32F401 firmware; its custom DWIN lived under `Marlin/src/lcd/e3v2/creality/` and pins are in `Marlin/src/pins/stm32f4/pins_CREALITY_F401.h`. |
 | `legacy/for_Octoprint` | C13, serial-host firmware | Adds `FT_MOTION`, `MEATPACK_ON_SERIAL_PORT_1`, and host support; historical ref uses the `lcd/dwin/creality` display path. |
@@ -33,6 +34,7 @@ The branch-to-printer/use mapping is also in [`README.md`](./README.md). Histori
 - Common C13 settings include serial port 1 at 115200 baud, IIC BL24CXX EEPROM (2 KB), and a `0x7000` flash/bootloader offset. Confirm the active environment and board pin header before relying on these values.
 - PlatformIO default environment is `STM32F103RET6_creality`; C14 uses `STM32F401RE_creality` for `BOARD_CREALITY_F401RE`. Environment declarations and inherited build flags live in `ini/stm32f1.ini` and `ini/stm32f4.ini`, with shared processing in `platformio.ini`.
 - On `c14_sd`, `Marlin/src/pins/pins.h` routes `BOARD_CREALITY_F401RE` through the fork-owned `Marlin/src/e3v3se/pins_CREALITY_F401RE.h` selector. `E3V3SE_C14` selects the migrated C14 wiring in `pins_CREALITY_F401_C14.h`; do not substitute the upstream Ender-5 S1 F401 pin map. The legacy C14 map includes TMC UART on PB12-PB15 and EEPROM I2C on PA7/PA8.
+- `c14_octoprint` retains the same C14 board and pin selector as `c14_sd`; its profile adds host/plugin behavior without changing the board map or SD/EEPROM wiring.
 - The custom pin header `Marlin/src/pins/stm32f1/pins_CREALITY_V3_GD303.h` defines the board's motors, endstops/probe, runout, EEPROM, and HX711 connections. HX711 is wired to PA4 clock and PC6 data in the current C13 setup.
 - Project memory targets documented in the project guidance are RAM below 40% of 64 KB and C13 flash below 46% of 512 KB. Compare results for the actual selected environment; these are design limits, not compiler-enforced assertions.
 
@@ -81,7 +83,7 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 - Step 2 one-click print: realigned with upstream; added `selectNewestFile()` depth-sync (from `origin/fix/53-one-click-print-start-wrong-file`). Not yet tested on a printer.
 - Step 3: auto Z-offset moved to `Marlin/src/e3v3se/`. Thumbnail code is not separable (about 300 refs in dwin.cpp plus marlinui/M73 hooks); left in place.
 - Step 4: C13 SD config profile `profiles/c13_sd` (242 define overrides + residual patches). Firmware verified identical to pre-change build except for the timestamp.
-- Next: C13 host profile (compare with `for_Octoprint`), then C14.
+- The C13 host profile was later completed on `c13_octoprint`, followed by the C14 SD migration. The C14 OctoPrint port now builds on `c14_octoprint`; its firmware still needs printer validation.
 - `Marlin/Config-export.h` is a tracked build artifact; consider untracking.
 
 ## First-boot wizard audit (post upstream merge)
