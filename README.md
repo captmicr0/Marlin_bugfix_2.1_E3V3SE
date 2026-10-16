@@ -183,12 +183,15 @@ Some options depend on others. For example, `ONE_CLICK_PRINT` requires `NO_SD_AU
 | Z height after homing menu | `DWIN_ZHOME_MENU` | `Configuration.h` |
 | Custom extrude menu | `DWIN_CUSTOM_EXTRUDE` | `Configuration.h` |
 | Extra preheat labels | `EXTRA_PREHEAT_LABELS` | `Configuration.h` |
+| Preheat completion alert | `PREHEAT_ALERT` | `Configuration.h` |
 | Input shaping menu | `DWIN_INPUT_SHAPING_MENU` | `Configuration_adv.h` |
 | Filament runout sensor | `FILAMENT_RUNOUT_SENSOR` | `Configuration.h` |
 | OctoPrint plugin layer | `OCTOPRINT_PLUGIN` | `Configuration.h` (`c13_octoprint` only) |
 | MeatPack on serial port 1 | `MEATPACK_ON_SERIAL_PORT_1` | `Configuration_adv.h` (on in `c13_octoprint`) |
 
 The table lists switches, not a statement of the current state; check the define in the file to see whether it is on in your branch. Some menu options depend on a base feature (for example the input shaping menu needs `FT_MOTION` or the legacy shapers).
+
+`PREHEAT_ALERT` sounds three short beeps when the nozzle and bed reach the targets selected from the LCD's **Prepare → Preheat** menu (PLA/TPU, plus PETG/ABS with `EXTRA_PREHEAT_LABELS`). It is off by default and can be enabled in the GitHub Actions build dialog. Editing or saving presets does not arm the alert; cooling down, changing heater targets, or starting a print cancels it. The beeps run without blocking the LCD or temperature management.
 
 ## Input shaping with FT_Motion (`M493`)
 
