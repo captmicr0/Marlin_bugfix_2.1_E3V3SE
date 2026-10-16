@@ -168,25 +168,40 @@ Some options depend on others. `OCTOPRINT_PLUGIN` relies on `HOST_ACTION_COMMAND
 
 | Feature | Define | File |
 | --- | --- | --- |
-| Thumbnail rendering | `DWIN_RENDER_THUMBNAIL` | `Configuration.h` |
-| One-click print | `ONE_CLICK_PRINT` | `Configuration_adv.h` (off in this branch) |
 | Auto Z-offset, delta (4 points) | `D_ROUTINE_AUTO_OFFSET` | `Configuration.h` |
 | Auto Z-offset, X (5 points) | `X_ROUTINE_AUTO_OFFSET` | `Configuration.h` |
-| FT_Motion and input shaping | `FT_MOTION` | `Configuration_adv.h` |
-| Linear Advance | `LIN_ADVANCE` | `Configuration_adv.h` |
 | Brightness and dimmer menu | `DWIN_DIMM_MENU` | `Configuration.h` |
-| Z height after homing menu | `DWIN_ZHOME_MENU` | `Configuration.h` |
 | Custom extrude menu | `DWIN_CUSTOM_EXTRUDE` | `Configuration.h` |
 | Extra preheat labels | `EXTRA_PREHEAT_LABELS` | `Configuration.h` |
-| Preheat completion alert | `PREHEAT_ALERT` | `Configuration.h` |
-| Input shaping menu | `DWIN_INPUT_SHAPING_MENU` | `Configuration_adv.h` |
 | Filament runout sensor | `FILAMENT_RUNOUT_SENSOR` | `Configuration.h` |
-| OctoPrint plugin layer | `OCTOPRINT_PLUGIN` | `Configuration.h` (on in this branch) |
+| Filled 3D bed mesh viewer | `BED_LEVEL_VISUALIZER` | `Configuration_adv.h` |
+| FT_Motion and input shaping | `FT_MOTION` | `Configuration_adv.h` |
+| Input shaping menu | `DWIN_INPUT_SHAPING_MENU` | `Configuration_adv.h` |
+| Linear Advance | `LIN_ADVANCE` | `Configuration_adv.h` |
 | MeatPack on serial port 1 | `MEATPACK_ON_SERIAL_PORT_1` | `Configuration_adv.h` (on in this branch) |
+| OctoPrint plugin layer | `OCTOPRINT_PLUGIN` | `Configuration.h` (on in this branch) |
+| One-click print | `ONE_CLICK_PRINT` | `Configuration_adv.h` (off in this branch) |
+| Preheat completion alert | `PREHEAT_ALERT` | `Configuration.h` |
+| Thumbnail rendering | `DWIN_RENDER_THUMBNAIL` | `Configuration.h` |
+| Z height after homing menu | `DWIN_ZHOME_MENU` | `Configuration.h` |
 
 The table lists switches, not a statement of the current state; check the define in the file to see whether it is on in your branch. Some menu options depend on a base feature (for example the input shaping menu needs `FT_MOTION` or the legacy shapers).
 
 `PREHEAT_ALERT` sounds three short beeps when the nozzle and bed reach the targets selected from the LCD's **Prepare → Preheat** menu (PLA/TPU, plus PETG/ABS with `EXTRA_PREHEAT_LABELS`). It is off by default and can be enabled in the GitHub Actions build dialog. Editing or saving presets does not arm the alert; cooling down, changing heater targets, or starting a print cancels it. The beeps run without blocking the LCD or temperature management.
+
+`BED_LEVEL_VISUALIZER` adds **Leveling → Bed Level Map** to the Creality DWIN LCD. It displays the current bilinear bed mesh as a filled isometric surface with interpolated colors: blue below zero, green at zero, and red above zero. A mesh of 6×6 measured points forms 5×5 surface cells; all 36 measurements are used. The map title is centered in yellow in the header. The legend shows the color scale in millimeters; the header shows minimum, maximum, total height range, population standard deviation and the original bed-level assessment from `v1.0.9.8_1f`. Statistics use three decimal places and integer-based formatting, so they remain visible without floating-point printf support. The view omits the mesh-size banner and fixed origin label. Reference axes X, Y and Z are drawn behind the heatmap using the same projection, with their labels outside the colored surface. Vertical displacement is exaggerated automatically so the shape is visible. Single-pixel scan bands overlap at their far edge to avoid gaps on panels with exclusive rectangle endpoints. The QR links to the original bed-leveling help at `https://bit.ly/navaismo-bed-leveling`, preserving the URL's case and a white quiet zone. It is also available when there is no mesh.
+
+The assessment selects the best rating that satisfies **both** original limits:
+
+| LCD rating | Maximum height range (mm) | Maximum standard deviation (mm) |
+| --- | --- | --- |
+| PERFECT | 0.3 | 0.1 |
+| GOOD | 0.5 | 0.2 |
+| OK | 1.0 | 0.3 |
+| BAD | 2.0 | 1.0 |
+| HORRIBLE | Above either BAD limit | Above either BAD limit |
+
+Missing measurements appear gray and receive `INCOMPLETE` instead of a quality rating; an uninitialized mesh shows a message to run bed leveling. The viewer sends one drawing command at a time with at least `BED_LEVEL_VISUALIZER_DRAW_DELAY_MS` between commands (10 ms by default, minimum 5 ms). This pacing covers the initial screen, QR, legend, surface rectangles and grid lines, preventing an uninterrupted flood of drawing commands. Increase the interval, for example to 20 ms, if a panel needs more time. Pressing the encoder returns to Leveling with Bed Level Map selected, even while drawing; temperature management continues between commands. The viewer reads a snapshot of the mesh without moving the printer or changing calibration. It requires `AUTO_BED_LEVELING_BILINEAR` and can be selected in the GitHub Actions build dialog (the workflow toggle defaults to off).
 
 ## Input shaping with FT_Motion (`M493`)
 

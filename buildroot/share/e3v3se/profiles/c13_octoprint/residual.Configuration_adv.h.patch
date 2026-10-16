@@ -108,7 +108,26 @@
        //#define SHOW_CUSTOM_BOOTSCREEN    // Show the bitmap in Marlin/_Bootscreen.h on startup.
      #endif
    #endif
-@@ -1870,10 +1861,12 @@
+@@ -1785,6 +1776,18 @@
+       //#define NEO2_USER_PRESET_STARTUP      // Have the printer display the user preset color on startup for the second strip
+     #endif
+   #endif
++#endif // HAS_DISPLAY
++
++// Filled isometric bed mesh in Leveling > Bed Level Map (Creality DWIN, bilinear ABL).
++#define BED_LEVEL_VISUALIZER
++#if ENABLED(BED_LEVEL_VISUALIZER)
++  #define BED_LEVEL_VISUALIZER_DRAW_DELAY_MS 10 // Minimum time between LCD drawing commands
++  #if BED_LEVEL_VISUALIZER_DRAW_DELAY_MS < 5
++    #error "BED_LEVEL_VISUALIZER_DRAW_DELAY_MS must be at least 5 ms."
++  #endif
++#endif
++#if ENABLED(BED_LEVEL_VISUALIZER) && (!ENABLED(DWIN_CREALITY_LCD) || !ENABLED(AUTO_BED_LEVELING_BILINEAR))
++  #error "BED_LEVEL_VISUALIZER requires DWIN_CREALITY_LCD and AUTO_BED_LEVELING_BILINEAR."
+ 
+ #endif // HAS_DISPLAY
+ 
+@@ -1870,10 +1873,12 @@
  
    #define SD_MENU_CONFIRM_START             // Confirm the selected SD file before printing
  
@@ -122,7 +141,7 @@
    //#define BROWSE_MEDIA_ON_INSERT          // Open the file browser when media is inserted
  
    //#define MEDIA_MENU_AT_TOP               // Force the media menu to be listed on the top of the main menu
-@@ -1958,21 +1951,17 @@
+@@ -1958,21 +1963,17 @@
  
    // SD Card Sorting options
    #if ENABLED(SDCARD_SORT_ALPHA)
@@ -146,7 +165,7 @@
    #endif
  
    // Allow international symbols in long filenames. To display correctly, the
-@@ -1984,6 +1973,7 @@
+@@ -1984,6 +1985,7 @@
    //#define M20_TIMESTAMP_SUPPORT         // Include timestamps by adding the 'T' flag to M20 commands
  
    #define SCROLL_LONG_FILENAMES// Scroll long filenames in the SD card menu
@@ -154,7 +173,7 @@
  
    //#define SD_ABORT_NO_COOLDOWN          // Leave the heaters on after Stop Print (not recommended!)
  
-@@ -2400,6 +2390,7 @@
+@@ -2400,6 +2402,7 @@
   * Requires a display with a controllable backlight
   */
  //#define LCD_BACKLIGHT_TIMEOUT_MINS 1  // (minutes) Timeout before turning off the backlight
@@ -162,7 +181,7 @@
  
  #if defined(DISPLAY_SLEEP_MINUTES) || defined(LCD_BACKLIGHT_TIMEOUT_MINS)
    #define EDITABLE_DISPLAY_TIMEOUT      // Edit sleep / backlight timeout with M255 S<minutes> and a menu item
-@@ -2469,6 +2460,28 @@
+@@ -2469,6 +2472,28 @@
    #endif
  #endif
  
@@ -191,7 +210,7 @@
  // @section extruder
  
  /**
-@@ -2582,7 +2595,11 @@
+@@ -2582,7 +2607,11 @@
    #define PROBING_MARGIN_LEFT PROBING_MARGIN
    #define PROBING_MARGIN_RIGHT PROBING_MARGIN+10
    #define PROBING_MARGIN_FRONT PROBING_MARGIN
@@ -203,7 +222,7 @@
  #endif
  
  #if ANY(MESH_BED_LEVELING, AUTO_BED_LEVELING_UBL)
-@@ -3467,6 +3484,10 @@
+@@ -3467,6 +3496,10 @@
    #define  X_SLAVE_ADDRESS 0x03
    #define  Y_SLAVE_ADDRESS 0x03
    #define  Z_SLAVE_ADDRESS 0x03
@@ -214,7 +233,7 @@
    //#define X2_SLAVE_ADDRESS 0
    //#define Y2_SLAVE_ADDRESS 0
    //#define Z2_SLAVE_ADDRESS 0
-@@ -3478,7 +3499,7 @@
+@@ -3478,7 +3511,7 @@
    //#define  U_SLAVE_ADDRESS 0
    //#define  V_SLAVE_ADDRESS 0
    //#define  W_SLAVE_ADDRESS 0
@@ -223,7 +242,7 @@
    //#define E1_SLAVE_ADDRESS 0
    //#define E2_SLAVE_ADDRESS 0
    //#define E3_SLAVE_ADDRESS 0
-@@ -4233,9 +4254,7 @@
+@@ -4233,9 +4266,7 @@
  #if ENABLED(GCODE_MACROS)
    #define GCODE_MACROS_SLOTS       5  // Up to 10 may be used
    #define GCODE_MACROS_SLOT_SIZE  50  // Maximum length of a single macro
@@ -233,7 +252,7 @@
  #endif
  
  /**
-@@ -4530,9 +4549,7 @@
+@@ -4530,9 +4561,7 @@
  #if ENABLED(FREEZE_FEATURE)
    //#define FREEZE_PIN   -1   // Override the default (KILL) pin here
    #define FREEZE_STATE  LOW   // State of pin indicating freeze
@@ -243,7 +262,7 @@
    /**
     * Command P000 (REALTIME_REPORTING_COMMANDS and EMERGENCY_PARSER) or
     * FREEZE_PIN (FREEZE_FEATURE) initiates a soft feed hold that keeps
-@@ -4545,9 +4562,7 @@
+@@ -4545,9 +4574,7 @@
     * NOTE: Affects Laser PWM but DOES NOT pause Spindle, Fans, Heaters or other devices.
     */
    //#define SOFT_FEED_HOLD
