@@ -3909,10 +3909,9 @@ void HMI_Plan_Move(const feedRate_t fr_mm_s)
 
 void HMI_Move_Done(const AxisEnum axis)
 {
-  // rock_20211120
-  // EncoderRate.enabled = false;
-  // checkkey =  Max_GUI;
-  planner.synchronize();
+  // Jog moves are already queued. Waiting here calls idle(), which dispatches
+  // this editor again before it has returned to the navigation state.
+  EncoderRate.enabled = false;
   checkkey = AxisMove;
   switch (axis)
   {
@@ -3931,7 +3930,7 @@ void HMI_Move_Done(const AxisEnum axis)
   default:
     break;
   }
-  // Dwin update lcd();
+  DWIN_UpdateLCD();
 }
 
 void HMI_Move_X()
