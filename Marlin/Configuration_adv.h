@@ -1789,6 +1789,18 @@
 
 #endif // HAS_DISPLAY
 
+// Filled isometric bed mesh in Leveling > Bed Level Map (Creality DWIN, bilinear ABL).
+#define BED_LEVEL_VISUALIZER
+#if ENABLED(BED_LEVEL_VISUALIZER)
+  #define BED_LEVEL_VISUALIZER_DRAW_DELAY_MS 10 // Minimum time between LCD drawing commands
+  #if BED_LEVEL_VISUALIZER_DRAW_DELAY_MS < 5
+    #error "BED_LEVEL_VISUALIZER_DRAW_DELAY_MS must be at least 5 ms."
+  #endif
+#endif
+#if ENABLED(BED_LEVEL_VISUALIZER) && (!ENABLED(DWIN_CREALITY_LCD) || !ENABLED(AUTO_BED_LEVELING_BILINEAR))
+  #error "BED_LEVEL_VISUALIZER requires DWIN_CREALITY_LCD and AUTO_BED_LEVELING_BILINEAR."
+#endif
+
 // Some displays offer Feedrate / Flow editing.
 #if ANY(HAS_MARLINUI_MENU, DWIN_CREALITY_LCD, DWIN_LCD_PROUI, MALYAN_LCD, TOUCH_SCREEN, ULTIPANEL_FEEDMULTIPLY)
   #define SPEED_EDIT_MIN    10  // (%) Feedrate percentage edit range minimum

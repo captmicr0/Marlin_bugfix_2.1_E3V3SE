@@ -89,6 +89,9 @@ enum processID : uint8_t {
   MotionMenu,
   Info,
   Pstats,
+#if ENABLED(BED_LEVEL_VISUALIZER)
+  BedLevelView,
+#endif
   Tune,
   #if HAS_PREHEAT
     PLAPreheat,

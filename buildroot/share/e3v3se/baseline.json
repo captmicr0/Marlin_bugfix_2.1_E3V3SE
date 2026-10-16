@@ -44,7 +44,8 @@
     "Marlin/src/sd/cardreader.h",
     "README.md",
     "ini/stm32f1.ini",
-    "platformio.ini"
+    "platformio.ini",
+    "test/README.md"
   ],
   "build": {
     "STM32F103RET6_creality": {
@@ -52,8 +53,8 @@
       "ram": 29224
     },
     "STM32F401RE_creality": {
-      "flash": 232896,
-      "ram": 29336
+      "flash": 238064,
+      "ram": 29640
     }
   }
 }
