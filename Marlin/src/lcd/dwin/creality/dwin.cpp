@@ -4111,6 +4111,7 @@ void HMI_ETemp()
         checkkey = PLAPreheat;
         ui.material_preset[0].hotend_temp = HMI_ValueStruct.E_Temp;
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(temp_line) + TEMP_SET_OFFSET, ui.material_preset[0].hotend_temp);
+        DWIN_UpdateLCD();
         return;
       }
       else if (HMI_ValueStruct.show_mode == -3)
@@ -4118,14 +4119,16 @@ void HMI_ETemp()
         checkkey = TPUPreheat;
         ui.material_preset[1].hotend_temp = HMI_ValueStruct.E_Temp;
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(temp_line) + TEMP_SET_OFFSET, ui.material_preset[1].hotend_temp);
+        DWIN_UpdateLCD();
         return;
       }
-    #if ENABLED(PREHEAT_EXTRA_LABELS)
+    #if ENABLED(EXTRA_PREHEAT_LABELS)
       else if (HMI_ValueStruct.show_mode == -7)
       {
         checkkey = PETGPreheat;
         ui.material_preset[2].hotend_temp = HMI_ValueStruct.E_Temp;
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(temp_line) + TEMP_SET_OFFSET, ui.material_preset[2].hotend_temp);
+        DWIN_UpdateLCD();
         return;
       }
       else if (HMI_ValueStruct.show_mode == -8)
@@ -4133,6 +4136,7 @@ void HMI_ETemp()
         checkkey = ABSPreheat;
         ui.material_preset[3].hotend_temp = HMI_ValueStruct.E_Temp;
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(temp_line) + TEMP_SET_OFFSET, ui.material_preset[3].hotend_temp);
+        DWIN_UpdateLCD();
         return;
       }
     #endif
@@ -4190,7 +4194,7 @@ void HMI_ETemp()
     #endif  
     else
     #if ENABLED(DWIN_RENDER_THUMBNAIL)
-      if(hasThumbnail){
+      if(hasThumbnail && HMI_ValueStruct.show_mode >= -1){
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Select_Color, 3, VALUERANGE_X, THUMB_MBASE(temp_line) + TEMP_SET_OFFSET, HMI_ValueStruct.E_Temp);
       }else{
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Select_Color, 3, VALUERANGE_X, MBASE(temp_line) + TEMP_SET_OFFSET, HMI_ValueStruct.E_Temp);
@@ -4313,7 +4317,7 @@ void HMI_BedTemp()
         checkkey = PLAPreheat;
         ui.material_preset[0].bed_temp = HMI_ValueStruct.Bed_Temp;
       #if ENABLED(DWIN_RENDER_THUMBNAIL)
-        if(hasThumbnail){
+        if(hasThumbnail && HMI_ValueStruct.show_mode >= -1){
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, THUMB_MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[0].bed_temp);
         }else{
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[0].bed_temp);
@@ -4321,6 +4325,7 @@ void HMI_BedTemp()
       #else
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[0].bed_temp);
       #endif
+        DWIN_UpdateLCD();
         return;
       }
       else if (HMI_ValueStruct.show_mode == -3)
@@ -4328,7 +4333,7 @@ void HMI_BedTemp()
         checkkey = TPUPreheat;
         ui.material_preset[1].bed_temp = HMI_ValueStruct.Bed_Temp;
       #if ENABLED(DWIN_RENDER_THUMBNAIL)
-        if(hasThumbnail){
+        if(hasThumbnail && HMI_ValueStruct.show_mode >= -1){
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, THUMB_MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[1].bed_temp);
         }else{
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[1].bed_temp);
@@ -4336,15 +4341,16 @@ void HMI_BedTemp()
       #else
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[1].bed_temp);
       #endif
+        DWIN_UpdateLCD();
         return;
       }
-    #if ENABLED(PREHEAT_EXTRA_LABELS)  
+    #if ENABLED(EXTRA_PREHEAT_LABELS)
       else if (HMI_ValueStruct.show_mode == -7)
       {
         checkkey = PETGPreheat;
         ui.material_preset[2].bed_temp = HMI_ValueStruct.Bed_Temp;
       #if ENABLED(DWIN_RENDER_THUMBNAIL)
-        if(hasThumbnail){
+        if(hasThumbnail && HMI_ValueStruct.show_mode >= -1){
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, THUMB_MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[2].bed_temp);
         }else{
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[2].bed_temp);
@@ -4352,6 +4358,7 @@ void HMI_BedTemp()
       #else
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[2].bed_temp);
       #endif
+        DWIN_UpdateLCD();
         return;
       }
       else if (HMI_ValueStruct.show_mode == -8)
@@ -4359,7 +4366,7 @@ void HMI_BedTemp()
         checkkey = ABSPreheat;
         ui.material_preset[3].bed_temp = HMI_ValueStruct.Bed_Temp;
       #if ENABLED(DWIN_RENDER_THUMBNAIL)
-        if(hasThumbnail){
+        if(hasThumbnail && HMI_ValueStruct.show_mode >= -1){
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, THUMB_MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[3].bed_temp);
         }else{
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[3].bed_temp);
@@ -4367,6 +4374,7 @@ void HMI_BedTemp()
       #else
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(bed_line) + TEMP_SET_OFFSET, ui.material_preset[3].bed_temp);
       #endif
+        DWIN_UpdateLCD();
         return;
       }
     #endif
@@ -4425,7 +4433,7 @@ void HMI_BedTemp()
     else
     {
     #if ENABLED(DWIN_RENDER_THUMBNAIL)
-      if(hasThumbnail){
+      if(hasThumbnail && HMI_ValueStruct.show_mode >= -1){
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Select_Color, 3, VALUERANGE_X, THUMB_MBASE(bed_line) + TEMP_SET_OFFSET, HMI_ValueStruct.Bed_Temp);
       }else{
         DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Select_Color, 3, VALUERANGE_X, MBASE(bed_line) + TEMP_SET_OFFSET, HMI_ValueStruct.Bed_Temp);
@@ -4439,7 +4447,7 @@ void HMI_BedTemp()
 
 #endif // Has heated bed
 
-#if HAS_PREHEAT
+#if HAS_PREHEAT && HAS_FAN
 
 void HMI_FanSpeed()
 {
@@ -4465,7 +4473,12 @@ void HMI_FanSpeed()
     case -3:
       fan_line = PREHEAT_CASE_FAN;
       break;
-    // case -4: fan_line = TEMP_CASE_FAN + MROWS -index_temp;break;
+  #if ENABLED(EXTRA_PREHEAT_LABELS)
+    case -7:
+    case -8:
+      fan_line = PREHEAT_CASE_FAN;
+      break;
+  #endif
     default:
     #if ENABLED(DWIN_RENDER_THUMBNAIL)
       if(hasThumbnail){
@@ -4481,12 +4494,13 @@ void HMI_FanSpeed()
     if (Apply_Encoder(encoder_diffState, HMI_ValueStruct.Fan_speed))
     {
       EncoderRate.enabled = false;
+      LIMIT(HMI_ValueStruct.Fan_speed, 0, 255);
       if (HMI_ValueStruct.show_mode == -2)
       {
         checkkey = PLAPreheat;
         ui.material_preset[0].fan_speed = HMI_ValueStruct.Fan_speed;
         #if ENABLED(DWIN_RENDER_THUMBNAIL)
-          if(hasThumbnail){
+          if(hasThumbnail && HMI_ValueStruct.show_mode >= -1){
             DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, THUMB_MBASE(fan_line) + TEMP_SET_OFFSET, ui.material_preset[0].fan_speed);
           }else{
             DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(fan_line) + TEMP_SET_OFFSET, ui.material_preset[0].fan_speed);
@@ -4494,6 +4508,7 @@ void HMI_FanSpeed()
         #else
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(fan_line) + TEMP_SET_OFFSET, ui.material_preset[0].fan_speed);
         #endif
+        DWIN_UpdateLCD();
         return;
       }
       else if (HMI_ValueStruct.show_mode == -3)
@@ -4502,7 +4517,7 @@ void HMI_FanSpeed()
         ui.material_preset[1].fan_speed = HMI_ValueStruct.Fan_speed;
         
         #if ENABLED(DWIN_RENDER_THUMBNAIL)
-          if(hasThumbnail){
+          if(hasThumbnail && HMI_ValueStruct.show_mode >= -1){
             DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, THUMB_MBASE(fan_line) + TEMP_SET_OFFSET, ui.material_preset[1].fan_speed);
           }else{
             DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(fan_line) + TEMP_SET_OFFSET, ui.material_preset[1].fan_speed);
@@ -4510,8 +4525,27 @@ void HMI_FanSpeed()
         #else
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(fan_line) + TEMP_SET_OFFSET, ui.material_preset[1].fan_speed);
         #endif
+        DWIN_UpdateLCD();
         return;
       }
+    #if ENABLED(EXTRA_PREHEAT_LABELS)
+      else if (HMI_ValueStruct.show_mode == -7)
+      {
+        checkkey = PETGPreheat;
+        ui.material_preset[2].fan_speed = HMI_ValueStruct.Fan_speed;
+        DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(fan_line) + TEMP_SET_OFFSET, ui.material_preset[2].fan_speed);
+        DWIN_UpdateLCD();
+        return;
+      }
+      else if (HMI_ValueStruct.show_mode == -8)
+      {
+        checkkey = ABSPreheat;
+        ui.material_preset[3].fan_speed = HMI_ValueStruct.Fan_speed;
+        DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Color_Bg_Black, 3, VALUERANGE_X, MBASE(fan_line) + TEMP_SET_OFFSET, ui.material_preset[3].fan_speed);
+        DWIN_UpdateLCD();
+        return;
+      }
+    #endif
       else if (HMI_ValueStruct.show_mode == -1)
       {
         checkkey = TemperatureID;
@@ -4561,7 +4595,7 @@ void HMI_FanSpeed()
     else
     {
     #if ENABLED(DWIN_RENDER_THUMBNAIL)
-        if(hasThumbnail){
+        if(hasThumbnail && HMI_ValueStruct.show_mode >= -1){
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Select_Color, 3, VALUERANGE_X, THUMB_MBASE(fan_line) + TEMP_SET_OFFSET, HMI_ValueStruct.Fan_speed);
         }else{
           DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, Select_Color, 3, VALUERANGE_X, MBASE(fan_line) + TEMP_SET_OFFSET, HMI_ValueStruct.Fan_speed);
@@ -7873,9 +7907,9 @@ void Draw_Temperature_Menu()
 
 #if ENABLED(EXTRA_PREHEAT_LABELS)
   if (CVISI(TEMP_CASE_PETG))
-    Item_Temp_PETG(CLINE(TEMP_CASE_PETG));
+    Item_Temp_PETG(CSCROL(TEMP_CASE_PETG));
   if (CVISI(TEMP_CASE_ABS))
-    Item_Temp_ABS(CLINE(TEMP_CASE_ABS));
+    Item_Temp_ABS(CSCROL(TEMP_CASE_ABS));
 #endif
 
   if (CVISI(TEMP_CASE_HM_PID))
@@ -9057,18 +9091,18 @@ void HMI_Temperature()
         DWIN_Draw_String(false, false, DWIN_FONT_HEAD, Color_White, Color_Bg_Blue, 60, 4, "PETG SETTINGS"); // Draw title
         DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Back, 42, 26);                                           // return
         // DWIN_ICON_Show(HMI_flag.language, LANGUAGE_ABS_NOZZLE, 42, 84 - font_offset); // +jpn offset
-        DWIN_Draw_Label(MBASE(1), F("PETG Nozzle Temp"));
+        DWIN_Draw_Label(MBASE(PREHEAT_CASE_TEMP), F("PETG Nozzle Temp"));
 #if HAS_HEATED_BED
         // DWIN_ICON_Show(HMI_flag.language, LANGUAGE_ABS_BED, 42, 120 - font_offset);
-        DWIN_Draw_Label(MBASE(2), F("PETG BED Temp"));
+        DWIN_Draw_Label(MBASE(PREHEAT_CASE_BED), F("PETG BED Temp"));
 #endif
 #if HAS_FAN
         // DWIN_ICON_Show(HMI_flag.language, LANGUAGE_ABS_FAN, 42, 156 - font_offset);
-        DWIN_Draw_Label(MBASE(3), F("PETG Fan Speed"));
+        DWIN_Draw_Label(MBASE(PREHEAT_CASE_FAN), F("PETG Fan Speed"));
 #endif
 #if ENABLED(EEPROM_SETTINGS)
         // DWIN_ICON_Show(HMI_flag.language, LANGUAGE_ABSSetupSave, 42, 192 - font_offset);
-        DWIN_Draw_Label(MBASE(4), F("Save PETG Settings"));
+        DWIN_Draw_Label(MBASE(PREHEAT_CASE_SAVE), F("Save PETG Settings"));
 #endif
       }
       else
@@ -9107,18 +9141,18 @@ void HMI_Temperature()
         DWIN_Draw_String(false, false, DWIN_FONT_HEAD, Color_White, Color_Bg_Blue, 60, 4, "ABS SETTINGS"); // Draw title
         DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Back, 42, 26);                                          // return
         // DWIN_ICON_Show(HMI_flag.language, LANGUAGE_ABS_NOZZLE, 42, 84 - font_offset); // +jpn offset
-        DWIN_Draw_Label(MBASE(1), F("ABS Nozzle Temp"));
+        DWIN_Draw_Label(MBASE(PREHEAT_CASE_TEMP), F("ABS Nozzle Temp"));
 #if HAS_HEATED_BED
         // DWIN_ICON_Show(HMI_flag.language, LANGUAGE_ABS_BED, 42, 120 - font_offset);
-        DWIN_Draw_Label(MBASE(2), F("ABS BED Temp"));
+        DWIN_Draw_Label(MBASE(PREHEAT_CASE_BED), F("ABS BED Temp"));
 #endif
 #if HAS_FAN
         // DWIN_ICON_Show(HMI_flag.language, LANGUAGE_ABS_FAN, 42, 156 - font_offset);
-        DWIN_Draw_Label(MBASE(3), F("ABS Fan Speed"));
+        DWIN_Draw_Label(MBASE(PREHEAT_CASE_FAN), F("ABS Fan Speed"));
 #endif
 #if ENABLED(EEPROM_SETTINGS)
         // DWIN_ICON_Show(HMI_flag.language, LANGUAGE_ABSSetupSave, 42, 192 - font_offset);
-        DWIN_Draw_Label(MBASE(4), F("Save ABS Settings"));
+        DWIN_Draw_Label(MBASE(PREHEAT_CASE_SAVE), F("Save ABS Settings"));
 #endif
       }
       else
@@ -10495,7 +10529,7 @@ void HMI_PLAPreheatSetting()
       break;
 #endif
 #if ENABLED(EEPROM_SETTINGS)
-    case 4:
+    case PREHEAT_CASE_SAVE:
     { // Save PLA configuration
       const bool success = settings.save();
       HMI_AudioFeedback(success);
@@ -10603,8 +10637,8 @@ void HMI_TPUPreheatSetting()
       {
       case 0: // Back
         checkkey = TemperatureID;
-        select_temp.set(TEMP_CASE_TEMP);
-        index_temp = MROWS;
+        select_temp.set(TEMP_CASE_PETG);
+        index_temp = _MAX(MROWS, select_temp.now);
         HMI_ValueStruct.show_mode = -1;
         Draw_Temperature_Menu();
         break;
@@ -10671,8 +10705,8 @@ void HMI_TPUPreheatSetting()
       {
       case 0: // Back
         checkkey = TemperatureID;
-        select_temp.set(TEMP_CASE_TEMP);
-        index_temp = MROWS;
+        select_temp.set(TEMP_CASE_ABS);
+        index_temp = _MAX(MROWS, select_temp.now);
         HMI_ValueStruct.show_mode = -1;
         Draw_Temperature_Menu();
         break;
