@@ -53,6 +53,10 @@ on:
         description: "PREHEAT_ALERT (beep when LCD preheating is complete)"
         type: boolean
         default: false
+      bed_level_visualizer:
+        description: "BED_LEVEL_VISUALIZER (filled isometric bed mesh in Leveling)"
+        type: boolean
+        default: false
       dwin_custom_extrude:
         description: "DWIN_CUSTOM_EXTRUDE (custom extrude menu)"
         type: boolean
@@ -102,6 +106,7 @@ jobs:
             DWIN_ZHOME_MENU=${{ inputs.dwin_zhome_menu }} \
             EXTRA_PREHEAT_LABELS=${{ inputs.extra_preheat_labels }} \
             PREHEAT_ALERT=${{ inputs.preheat_alert }} \
+            BED_LEVEL_VISUALIZER=${{ inputs.bed_level_visualizer }} \
             DWIN_CUSTOM_EXTRUDE=${{ inputs.dwin_custom_extrude }} \
             SKEW_CORRECTION=${{ inputs.skew_correction }} \
             DWIN_SKEW_MENU=${{ inputs.dwin_skew_menu }} \

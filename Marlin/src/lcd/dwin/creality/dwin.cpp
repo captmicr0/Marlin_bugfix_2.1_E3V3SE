@@ -26,6 +26,9 @@ lin 3D Printer Firmware
 #include "../../../inc/MarlinConfig.h"
 #if ENABLED(DWIN_CREALITY_LCD)
 #include "dwin.h"
+#if ENABLED(BED_LEVEL_VISUALIZER)
+  #include "bed_level_visualizer.h"
+#endif
 #include "ui_position.h" //Ui position
 #if ANY(AUTO_BED_LEVELING_BILINEAR, AUTO_BED_LEVELING_LINEAR, AUTO_BED_LEVELING_3POINT) && DISABLED(PROBE_MANUALLY)
 #define HAS_ONESTEP_LEVELING 1
@@ -1560,6 +1563,9 @@ inline bool Apply_Encoder(const ENCODER_DiffState &encoder_diffState, T &valref)
 #define CONTROL_CASE_STATS (CONTROL_CASE_INFO + 1)
 #define CONTROL_CASE_TOTAL CONTROL_CASE_STATS
 
+#define LEVEL_CASE_BEDVIS 4
+#define LEVEL_CASE_TOTAL (3 + ENABLED(BED_LEVEL_VISUALIZER))
+
 #define TUNE_CASE_SPEED 1
 #define TUNE_CASE_TEMP (TUNE_CASE_SPEED + ENABLED(HAS_HOTEND))
 #define TUNE_CASE_FLOW (TUNE_CASE_TEMP + ENABLED(HAS_HOTEND))
@@ -2062,14 +2068,15 @@ void Item_Control_Info(const uint16_t line)
   }
 }
 
-void Item_Control_Stats(const uint16_t line)
+void Item_Control_Stats(const uint8_t row)
 {
+  Erase_Menu_Text(row);
   if (HMI_flag.language < Language_Max)
   {
-    DWIN_Draw_Label(line, F("Printer Statistics"));
-    DWIN_ICON_Show(ICON, ICON_More, 208, MBASE(line) - 3);
+    DWIN_Draw_Label(MBASE(row), F("Printer Statistics"));
   }
-  Draw_Menu_Line(line, ICON_Info);
+  Draw_Menu_Line(row, ICON_Info);
+  Draw_More_Icon(row);
 }
 
 static void Item_Temp_HMPID(const uint16_t line)
@@ -2139,7 +2146,7 @@ void Draw_Control_Menu()
   if (CVISI(CONTROL_CASE_INFO))
     Item_Control_Info(CLINE(CONTROL_CASE_INFO));
   if (CVISI(CONTROL_CASE_STATS))
-    Item_Control_Stats(CLINE(CONTROL_CASE_STATS));
+    Item_Control_Stats(CSCROL(CONTROL_CASE_STATS));
   if (select_control.now && CVISI(select_control.now))
     Draw_Menu_Cursor(CSCROL(select_control.now));
 
@@ -2167,7 +2174,6 @@ void Draw_Control_Menu()
   _TEMP_ICON(CONTROL_CASE_RESET, ICON_ResumeEEPROM, false);
 #endif
   _TEMP_ICON(CONTROL_CASE_INFO, ICON_Info, true);
-  _TEMP_ICON(CONTROL_CASE_STATS, ICON_Info, true);
 }
 
 static void Show_Temp_Default_Data(const uint8_t line, uint8_t index)
@@ -5966,13 +5972,22 @@ void HMI_Select_language()
 
 
 
+#if ENABLED(BED_LEVEL_VISUALIZER)
+  static void Item_Level_BedVisualizer(const uint8_t row) {
+    Erase_Menu_Text(row);
+    DWIN_Draw_Label(MBASE(row), F("Bed Level Map"));
+    Draw_Menu_Line(row, ICON_Edit_Level_Data);
+    Draw_More_Icon(row);
+  }
+#endif
+
 void Draw_Level_Menu(){
   Clear_Main_Window();
   Draw_Mid_Status_Area(true);
   HMI_flag.Refresh_bottom_flag = false; // Flag refresh bottom parameter
 
   // Back option
-  Draw_Back_First();
+  Draw_Back_First(select_cextr.now == 0);
   // Title
   Draw_Title(F("Leveling Menu"));
   
@@ -5991,6 +6006,11 @@ void Draw_Level_Menu(){
   DWIN_ICON_Show(HMI_flag.language, LANGUAGE_EDIT_LEVEL_DATA, 42, MBASE(3) + JPN_OFFSET);
   // Draw Menu Line for Edit Level Data Icon
   Draw_Menu_Line(3, ICON_Edit_Level_Data);
+#if ENABLED(BED_LEVEL_VISUALIZER)
+  Item_Level_BedVisualizer(LEVEL_CASE_BEDVIS);
+#endif
+  if (select_cextr.now)
+    Draw_Menu_Cursor(select_cextr.now);
 }
 
 void HMI_Level_Menu(){
@@ -6001,7 +6021,7 @@ void HMI_Level_Menu(){
   // Avoid flicker by updating only the previous menu
   if (encoder_diffState == ENCODER_DIFF_CW)
   {
-    if (select_cextr.inc(1  + 3))
+    if (select_cextr.inc(1 + LEVEL_CASE_TOTAL))
       Move_Highlight(1, select_cextr.now);
   }
   else if (encoder_diffState == ENCODER_DIFF_CCW)
@@ -6035,6 +6055,13 @@ void HMI_Level_Menu(){
         Popup_Window_Leveling();
         Refresh_Leveling_Value(); // Flush leveling values ​​and colors to the screen
         break;    
+#if ENABLED(BED_LEVEL_VISUALIZER)
+      case LEVEL_CASE_BEDVIS:
+        checkkey = BedLevelView;
+        HMI_flag.Refresh_bottom_flag = true;
+        BedLevelVisualizer::start();
+        break;
+#endif
     }
   }
   DWIN_UpdateLCD();
@@ -8024,9 +8051,7 @@ void HMI_Control()
           DWIN_ICON_Show(ICON, ICON_More, 208, MBASE(MROWS) - 3);
           break;
         case CONTROL_CASE_STATS: // Printer Statistics >
-          Item_Control_Stats(MBASE(MROWS));
-          Draw_Menu_Icon(MROWS, ICON_Info);
-          DWIN_ICON_Show(ICON, ICON_More, 208, MBASE(MROWS) - 3);
+          Item_Control_Stats(MROWS);
           break;
 
         default:
@@ -10148,6 +10173,20 @@ void HMI_Pstats()
   DWIN_UpdateLCD();
 }
 
+#if ENABLED(BED_LEVEL_VISUALIZER)
+  static void HMI_BedLevelVisualizer() {
+    if (get_encoder_state() == ENCODER_DIFF_ENTER) {
+      BedLevelVisualizer::cancel();
+      checkkey = Level;
+      select_cextr.set(LEVEL_CASE_BEDVIS);
+      Draw_Level_Menu();
+      DWIN_UpdateLCD();
+      return;
+    }
+    BedLevelVisualizer::update();
+  }
+#endif
+
 /* M117 Info */
 void HMI_M117Info()
 {
@@ -12090,6 +12129,11 @@ void DWIN_HandleScreen()
   case Control:
     HMI_Control();
     break;
+#if ENABLED(BED_LEVEL_VISUALIZER)
+  case BedLevelView:
+    HMI_BedLevelVisualizer();
+    break;
+#endif
   case Level:
     HMI_Level_Menu();
     break;  
