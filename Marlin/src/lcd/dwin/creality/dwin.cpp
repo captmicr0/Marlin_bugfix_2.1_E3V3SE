@@ -152,8 +152,10 @@ bool isPaused = false;
 
 // bool qrShown = false;
 #if ENABLED(PREHEAT_ALERT)
-  bool preheat_flag = false;
-  uint8_t material_index = 0;
+  static bool preheat_flag = false;
+  static celsius_t preheat_hotend_target = 0, preheat_bed_target = 0;
+  static uint8_t preheat_beep_phase = 0;
+  static millis_t preheat_beep_ms = 0;
 #endif
 
 
@@ -396,14 +398,51 @@ static void Auto_in_out_feedstock(bool dir) // 0 returns material, 1 feeds
 }
 
 #if ENABLED(PREHEAT_ALERT)
-  // Preheat finished alert
-  void Preheat_alert(uint8_t material){
-    if( preheat_flag && thermalManager.degHotend(0) >= ui.material_preset[material].hotend_temp && thermalManager.degBed() >= ui.material_preset[material].bed_temp){
-      // beep to alert process finished
-      Generic_BeepAlert();
-      delay(200);
-      Generic_BeepAlert();
+  static void Cancel_Preheat_Alert() {
+    preheat_flag = false;
+    #if PIN_EXISTS(BEEPER)
+      if (preheat_beep_phase) WRITE(BEEPER_PIN, LOW);
+    #endif
+    preheat_beep_phase = 0;
+  }
+
+  static void Start_Preheat_Alert() {
+    Cancel_Preheat_Alert();
+    // Capture the applied targets, including any limits enforced by Temperature.
+    preheat_hotend_target = TERN(HAS_HOTEND, thermalManager.degTargetHotend(0), 0);
+    preheat_bed_target = TERN(HAS_HEATED_BED, thermalManager.degTargetBed(), 0);
+    preheat_flag = preheat_hotend_target > 0 || preheat_bed_target > 0;
+  }
+
+  static void Preheat_alert() {
+    if (!preheat_flag && !preheat_beep_phase) return;
+
+    if (marlin.printingIsActive() || marlin.printingIsPaused() || HMI_flag.cloud_printing_flag
+        || preheat_hotend_target != TERN(HAS_HOTEND, thermalManager.degTargetHotend(0), 0)
+        || preheat_bed_target != TERN(HAS_HEATED_BED, thermalManager.degTargetBed(), 0)) {
+      Cancel_Preheat_Alert();
+      return;
+    }
+
+    const millis_t ms = millis();
+    if (preheat_flag) {
+      #if HAS_HOTEND
+        if (preheat_hotend_target > 0 && thermalManager.degHotend(0) < preheat_hotend_target) return;
+      #endif
+      #if HAS_HEATED_BED
+        if (preheat_bed_target > 0 && thermalManager.degBed() < preheat_bed_target) return;
+      #endif
       preheat_flag = false;
+      preheat_beep_phase = 6; // Three 200 ms beeps, separated by 200 ms pauses.
+      preheat_beep_ms = ms;
+    }
+
+    if (preheat_beep_phase && ELAPSED(ms, preheat_beep_ms)) {
+      #if PIN_EXISTS(BEEPER)
+        WRITE(BEEPER_PIN, (preheat_beep_phase & 1) ? LOW : HIGH);
+      #endif
+      --preheat_beep_phase;
+      preheat_beep_ms = ms + 200;
     }
   }
 #endif
@@ -7754,6 +7793,7 @@ void HMI_Prepare()
       }
 #endif
       TERN_(HAS_HOTEND, thermalManager.setTargetHotend(ui.material_preset[0].hotend_temp, 0));
+      TERN_(PREHEAT_ALERT, Start_Preheat_Alert());
       break;
     case PREPARE_CASE_TPU: // TPU preheat
       TERN_(HAS_HEATED_BED, thermalManager.setTargetBed(ui.material_preset[1].bed_temp));
@@ -7765,6 +7805,7 @@ void HMI_Prepare()
       }
 #endif
       TERN_(HAS_HOTEND, thermalManager.setTargetHotend(ui.material_preset[1].hotend_temp, 0));
+      TERN_(PREHEAT_ALERT, Start_Preheat_Alert());
       break;
 #if ENABLED(EXTRA_PREHEAT_LABELS)
     case PREPARE_CASE_PETG: // PETG preheat
@@ -7777,6 +7818,7 @@ void HMI_Prepare()
       }
 #endif
       TERN_(HAS_HOTEND, thermalManager.setTargetHotend(ui.material_preset[2].hotend_temp, 0));
+      TERN_(PREHEAT_ALERT, Start_Preheat_Alert());
       break;
 
     case PREPARE_CASE_ABS: // ABS preheat
@@ -7789,9 +7831,11 @@ void HMI_Prepare()
       }
 #endif
       TERN_(HAS_HOTEND, thermalManager.setTargetHotend(ui.material_preset[3].hotend_temp, 0));
+      TERN_(PREHEAT_ALERT, Start_Preheat_Alert());
       break;
 #endif
     case PREPARE_CASE_COOL: // Cool
+      TERN_(PREHEAT_ALERT, Cancel_Preheat_Alert());
       TERN_(HAS_FAN, thermalManager.zero_fan_speeds());
 #if HAS_HOTEND || HAS_HEATED_BED
       thermalManager.disable_all_heaters();
@@ -11270,6 +11314,7 @@ void Remove_card_window_check(void)
 
 void EachMomentUpdate()
 {
+  TERN_(PREHEAT_ALERT, Preheat_alert());
     static bool heat_dir = false, heat_dir_bed = false, high_dir = false;
   static uint8_t heat_index = BG_NOZZLE_MIN, bed_heat_index = BG_BED_MIN;
   static millis_t next_var_update_ms = 0, next_rts_update_ms = 0, next_heat_flash_ms = 0, next_heat_bed_flash_ms = 0, next_high_ms = 0, next_move_file_name_ms = 0;
