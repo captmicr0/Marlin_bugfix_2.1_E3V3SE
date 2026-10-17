@@ -15,6 +15,7 @@ FILES = [Path("Marlin/Configuration.h"), Path("Marlin/Configuration_adv.h")]
 
 # A feature can only be enabled if the feature it depends on is enabled too.
 DEPENDS = {
+    "DWIN_PLR_MENU": "POWER_LOSS_RECOVERY",
     "DWIN_SKEW_MENU": "SKEW_CORRECTION",
     "DWIN_INPUT_SHAPING_MENU": "FT_MOTION",
 }

@@ -26,6 +26,7 @@
 
 #include "../../gcode.h"
 #include "../../../feature/powerloss.h"
+#include "../../../e3v3se/PLRSettings.h"
 #include "../../../module/motion.h"
 
 #if HAS_PLR_BED_THRESHOLD
@@ -73,7 +74,11 @@ void GcodeSuite::M1000() {
 
     if (!force_resume && parser.seen_test('S')) {
 
-      TERN_(PLR_HEAT_BED_ON_REBOOT, recovery.set_bed_temp(true));
+      #if ENABLED(DWIN_PLR_MENU)
+        plrSettings.preheat(true);
+      #else
+        TERN_(PLR_HEAT_BED_ON_REBOOT, recovery.set_bed_temp(true));
+      #endif
 
       #if HAS_MARLINUI_MENU
         ui.goto_screen(menu_job_recovery);
@@ -95,8 +100,10 @@ void GcodeSuite::M1000() {
       #endif
       TERN_(EXTENSIBLE_UI, ExtUI::onPrintTimerStopped());
     }
-    else
+    else {
+      TERN_(DWIN_CREALITY_LCD, DWIN_PowerLossResume());
       recovery.resume();
+    }
   }
   else
     plr_error(recovery.info.valid_head ? F("No") : F("Invalid"));

@@ -110,3 +110,12 @@ The Makefile/test runner supports `GIT_RESET_HARD`, which can run `git reset --h
 
 - `DWIN_RenderThumb` and its SD/RLE helpers moved from `lcd/dwin/creality/dwin_lcd.cpp` to `Marlin/src/e3v3se/ThumbRender.cpp` (built via `platformio.ini` filter, guarded by `DWIN_RENDER_THUMBNAIL`). Behavior unchanged; flash +56 B.
 - The thumbnail UI hooks in `dwin.cpp` (ThumbTune menus, `Goto_ThumbPrint`, ~116 `hasThumbnail` branches inside HMI handlers) stay there: they share static state with the handlers and can't be split without a UI rewrite.
+
+## Enhanced PLR with LCD menu
+
+- `POWER_LOSS_RECOVERY` and `DWIN_PLR_MENU` are commented out in the shipping config to save flash/RAM. The workflow's single `power_loss_recovery` boolean (default false) toggles both together. Config edits can enable them manually; M413/the LCD only control the runtime state of compiled-in recovery.
+- Applies to SD jobs on both SD and OctoPrint firmware, not streamed host prints. Recovery takes priority over One Click Print and uses a nonblocking DWIN confirmation dialog. Advanced options live in fork-owned `src/e3v3se/PLRSettings.*`, gated by `DWIN_PLR_MENU`.
+- BL24CXX bytes 0x20–0x2F hold the versioned/CRC-protected menu settings. M500/M501/M502 save/load/reset them without changing Marlin's V93 EEPROM block or calibration. Heating while awaiting confirmation is optional and Cancel turns those heaters off.
+- Checkpoints accumulate small Z changes against the last durable save, use an immutable write snapshot, preserve the resumed SD offset, and distinguish the live segment from the start of its whole G-code command. Standard Stepper and FT_Motion share `capture_block`; this preserves IJ arc centers and M83 extrusion when replaying segmented commands. C13 `/PLR` records grew from 196 to 212 bytes; older checkpoints are rejected.
+- Resume uses absolute recovery moves, restores saved modes/home/workspace offsets, reverses leveling modifiers once, preserves physical Z through M420 and purges at 3 mm/s. Serial logs distinguish command start, live segment, commanded return and counter-derived return. The LCD uses the standard print screen without a thumbnail after recovery.
+- Native tests cover workflow toggles, UI and One Click Print, menu editing/EEPROM fault injection, checkpoint consistency, leveling/fade/offsets, and replay of a spiral hop from the reported cube. On-printer C13 feedback confirms substantially improved recovery; other geometries and the other board/host variants still require hardware coverage. See `docs/power-loss-recovery.md`.

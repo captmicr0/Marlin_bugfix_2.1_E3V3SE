@@ -1915,8 +1915,11 @@
    * an option on the LCD screen to continue the print from the last-known
    * point in the file.
    */
-  #define POWER_LOSS_RECOVERY
+  //#define POWER_LOSS_RECOVERY // Optional: consumes flash/RAM; enable with DWIN_PLR_MENU for the LCD submenu.
   #if ENABLED(POWER_LOSS_RECOVERY)
+    // LCD-editable recovery options. Save from the submenu or with M500.
+    //#define DWIN_PLR_MENU
+    //#define PLR_HEAT_NOZZLE_ON_REBOOT // Default for the LCD nozzle-on-reboot setting
     #define PLR_ENABLED_DEFAULT       true // Power-Loss Recovery enabled by default. (Set with 'M413 Sn' & M500)
     //#define PLR_HEAT_BED_ON_REBOOT        // Heat up bed immediately on reboot to mitigate object detaching/warping.
     //#define PLR_HEAT_BED_EXTRA          0 // (°C) Relative increase of bed temperature for better adhesion (limited by max temp).
@@ -1927,7 +1930,7 @@
     //#define POWER_LOSS_PULLUP             // Set pullup / pulldown as appropriate for your sensor
     //#define POWER_LOSS_PULLDOWN
 
-    #define POWER_LOSS_ZRAISE        5    // (mm) Z axis raise on resume (on power-loss with UPS)
+    #define POWER_LOSS_ZRAISE        5    // (mm) Z axis raise on resume (on power-loss with UPS). Limited to Z_MAX_POS.
     //#define POWER_LOSS_PURGE_LEN    20    // (mm) Length of filament to purge on resume
 
     // Without a POWER_LOSS_PIN the following option helps reduce wear on the SD card,
