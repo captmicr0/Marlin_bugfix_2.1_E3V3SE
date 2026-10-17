@@ -181,6 +181,7 @@ Some options depend on others. For example, `ONE_CLICK_PRINT` requires `NO_SD_AU
 | Filament runout sensor | `FILAMENT_RUNOUT_SENSOR` | `Configuration.h` |
 | Filled 3D bed mesh viewer | `BED_LEVEL_VISUALIZER` | `Configuration_adv.h` |
 | FT_Motion and input shaping | `FT_MOTION` | `Configuration_adv.h` |
+| Ignore bed MINTEMP (off by default) | `E3V3SE_IGNORE_BED_MINTEMP` | `Configuration.h` |
 | Input shaping menu | `DWIN_INPUT_SHAPING_MENU` | `Configuration_adv.h` |
 | Linear Advance | `LIN_ADVANCE` | `Configuration_adv.h` |
 | MeatPack on serial port 1 | `MEATPACK_ON_SERIAL_PORT_1` | `Configuration_adv.h` (on in `c13_octoprint`) |
@@ -288,7 +289,7 @@ The `c13_octoprint` profile enables the host layer in `Marlin/src/e3v3se/OctoHos
 
 ## Bed minimum-temperature safety override
 
-The C13 SD and C14 SD profiles leave `E3V3SE_IGNORE_BED_MINTEMP` disabled in `Configuration.h`. For machines with an intermittent or missing bed sensor, it can be enabled by hand after reviewing the risk. This suppresses only the bed `MINTEMP` shutdown; `BED_MAXTEMP`, thermal runaway protection, and the bed heating-failed (`WATCH_BED`) protection remain active.
+`E3V3SE_IGNORE_BED_MINTEMP` is disabled by default in all four branches, so the bed `MINTEMP` check remains active. Enable the override by uncommenting it in `Configuration.h` or selecting **E3V3SE_IGNORE_BED_MINTEMP** in the GitHub Actions build dialog (default: off). Enabling it suppresses only the bed `MINTEMP` shutdown; `BED_MAXTEMP`, thermal runaway protection, and the bed heating-failed (`WATCH_BED`) protection remain active.
 
 This override should not be enabled when the bed sensor is required for safe operation. A disconnected sensor can otherwise go unnoticed.
 
