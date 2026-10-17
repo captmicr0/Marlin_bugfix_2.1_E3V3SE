@@ -89,6 +89,13 @@ enum processID : uint8_t {
   MotionMenu,
   Info,
   Pstats,
+#if ENABLED(POWER_LOSS_RECOVERY)
+  PowerLossResume,
+#endif
+#if ENABLED(DWIN_PLR_MENU)
+  PowerLossSettings,
+  PowerLossValue,
+#endif
 #if ENABLED(BED_LEVEL_VISUALIZER)
   BedLevelView,
 #endif
@@ -832,6 +839,10 @@ void Goto_MainMenu();
   void DWIN_RenderOctoLine(uint16_t y);
 #endif
 void Goto_FilePreview();
+
+#if ENABLED(POWER_LOSS_RECOVERY)
+  void DWIN_PowerLossResume();
+#endif
 
 // Variable control
 void HMI_Move_X();

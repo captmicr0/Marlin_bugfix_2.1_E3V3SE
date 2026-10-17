@@ -2833,8 +2833,7 @@ void Stepper::isr() {
         #endif
 
         #if ENABLED(POWER_LOSS_RECOVERY)
-          recovery.info.sdpos = current_block->sdpos;
-          recovery.info.current_position = current_block->start_position;
+          recovery.capture_block(current_block->sdpos, current_block->start_position);
         #endif
 
         #if ENABLED(DIRECT_STEPPING)

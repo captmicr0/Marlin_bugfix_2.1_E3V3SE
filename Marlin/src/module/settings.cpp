@@ -101,6 +101,7 @@
 #endif
 
 #include "../feature/fwretract.h"
+#include "../e3v3se/PLRSettings.h"
 
 #if ENABLED(POWER_LOSS_RECOVERY)
   #include "../feature/powerloss.h"
@@ -1970,7 +1971,7 @@ void MarlinSettings::postprocess() {
         store_mesh(bedlevel.storage_slot);
     #endif
 
-    const bool success = (eeprom_error == ERR_EEPROM_NOERR);
+    const bool success = (eeprom_error == ERR_EEPROM_NOERR) && TERN1(DWIN_PLR_MENU, plrSettings.save());
     if (success) {
       LCD_MESSAGE(MSG_SETTINGS_STORED);
       TERN_(HOST_PROMPT_SUPPORT, hostui.notify(GET_TEXT_F(MSG_SETTINGS_STORED)));
@@ -3236,7 +3237,10 @@ void MarlinSettings::postprocess() {
 
     switch (eeprom_error) {
       case ERR_EEPROM_NOERR:
-        if (!validating) postprocess();
+        if (!validating) {
+          postprocess();
+          TERN_(DWIN_PLR_MENU, plrSettings.load());
+        }
         break;
       case ERR_EEPROM_SIZE:
         DEBUG_ECHO_MSG("Index: ", eeprom_index - (EEPROM_OFFSET), " Size: ", datasize());
@@ -3764,6 +3768,7 @@ void MarlinSettings::reset() {
   #if ENABLED(POWER_LOSS_RECOVERY)
     recovery.enable(ENABLED(PLR_ENABLED_DEFAULT));
     TERN_(HAS_PLR_BED_THRESHOLD, recovery.bed_temp_threshold = PLR_BED_THRESHOLD);
+    TERN_(DWIN_PLR_MENU, plrSettings.reset());
   #endif
 
   //
