@@ -404,8 +404,7 @@ bool FTMotion::plan_next_block() {
     ensure_extruder_float_precision();
 
     #if ENABLED(POWER_LOSS_RECOVERY)
-      recovery.info.sdpos = current_block->sdpos;
-      recovery.info.current_position = current_block->start_position;
+      recovery.capture_block(current_block->sdpos, current_block->start_position);
     #endif
 
     // Some kinematics track axis motion in RX, RY, RZ

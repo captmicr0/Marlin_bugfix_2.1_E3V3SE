@@ -71,6 +71,7 @@ lin 3D Printer Firmware
 #endif
 
 #include "../../../e3v3se/AutoOffset.h"
+#include "../../../e3v3se/PLRSettings.h"
 
 // #include <QRCodeGenerator.h>
 
@@ -1561,7 +1562,8 @@ inline bool Apply_Encoder(const ENCODER_DiffState &encoder_diffState, T &valref)
 // #define CONTROL_CASE_INFO  (CONTROL_CASE_ADVSET + 1)
 #define CONTROL_CASE_INFO (CONTROL_CASE_RESET + 1)
 #define CONTROL_CASE_STATS (CONTROL_CASE_INFO + 1)
-#define CONTROL_CASE_TOTAL CONTROL_CASE_STATS
+#define CONTROL_CASE_PLR (CONTROL_CASE_STATS + ENABLED(DWIN_PLR_MENU))
+#define CONTROL_CASE_TOTAL CONTROL_CASE_PLR
 
 #define LEVEL_CASE_BEDVIS 4
 #define LEVEL_CASE_TOTAL (3 + ENABLED(BED_LEVEL_VISUALIZER))
@@ -2079,6 +2081,17 @@ void Item_Control_Stats(const uint8_t row)
   Draw_More_Icon(row);
 }
 
+#if ENABLED(DWIN_PLR_MENU)
+  void Item_Control_PLR(const uint8_t row) {
+    Erase_Menu_Text(row);
+    Draw_Menu_Line(row, ICON_Motion, "Power-loss recovery", true);
+  }
+#endif
+
+#if ENABLED(DWIN_PLR_MENU)
+  static void Goto_PLRSettings();
+#endif
+
 static void Item_Temp_HMPID(const uint16_t line)
 {
   if (HMI_flag.language < Language_Max)
@@ -2123,19 +2136,28 @@ void Draw_Control_Menu()
   {
     DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Control, TITLE_X, TITLE_Y);
 #if ENABLED(DWIN_CREALITY_480_LCD)
-    DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Temp, 60, CLINE(CONTROL_CASE_TEMP) + JPN_OFFSET);
-    DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Motion, 60, CLINE(CONTROL_CASE_MOVE) + JPN_OFFSET);
+    if (CVISI(CONTROL_CASE_TEMP))
+      DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Temp, 60, CLINE(CONTROL_CASE_TEMP) + JPN_OFFSET);
+    if (CVISI(CONTROL_CASE_MOVE))
+      DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Motion, 60, CLINE(CONTROL_CASE_MOVE) + JPN_OFFSET);
 #if ENABLED(EEPROM_SETTINGS)
-    DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Store, 60, CLINE(CONTROL_CASE_SAVE) + JPN_OFFSET);
-    DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Read, 60, CLINE(CONTROL_CASE_LOAD) + JPN_OFFSET);
-    DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Reset, 60, CLINE(CONTROL_CASE_RESET) + JPN_OFFSET);
+    if (CVISI(CONTROL_CASE_SAVE))
+      DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Store, 60, CLINE(CONTROL_CASE_SAVE) + JPN_OFFSET);
+    if (CVISI(CONTROL_CASE_LOAD))
+      DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Read, 60, CLINE(CONTROL_CASE_LOAD) + JPN_OFFSET);
+    if (CVISI(CONTROL_CASE_RESET))
+      DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Reset, 60, CLINE(CONTROL_CASE_RESET) + JPN_OFFSET);
 #endif
 #elif ENABLED(DWIN_CREALITY_320_LCD)
-    DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Temp, 42, CLINE(CONTROL_CASE_TEMP) + JPN_OFFSET);
-    DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Motion, 42, CLINE(CONTROL_CASE_MOVE) + JPN_OFFSET);
+    if (CVISI(CONTROL_CASE_TEMP))
+      DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Temp, 42, CLINE(CONTROL_CASE_TEMP) + JPN_OFFSET);
+    if (CVISI(CONTROL_CASE_MOVE))
+      DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Motion, 42, CLINE(CONTROL_CASE_MOVE) + JPN_OFFSET);
 #if ENABLED(EEPROM_SETTINGS)
-    DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Store, 42, CLINE(CONTROL_CASE_SAVE) + JPN_OFFSET);
-    DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Read, 42, CLINE(CONTROL_CASE_LOAD) + JPN_OFFSET);
+    if (CVISI(CONTROL_CASE_SAVE))
+      DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Store, 42, CLINE(CONTROL_CASE_SAVE) + JPN_OFFSET);
+    if (CVISI(CONTROL_CASE_LOAD))
+      DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Read, 42, CLINE(CONTROL_CASE_LOAD) + JPN_OFFSET);
     // DWIN_ICON_Show(HMI_flag.language, LANGUAGE_EDIT_LEVEL_DATA, 42, CLINE(CONTROL_CASE_SHOW_DATA) + JPN_OFFSET);
     // DWIN_ICON_Show(HMI_flag.language, LANGUAGE_Reset, 42, CLINE(CONTROL_CASE_RESET) + JPN_OFFSET);
 #endif
@@ -2147,6 +2169,10 @@ void Draw_Control_Menu()
     Item_Control_Info(CLINE(CONTROL_CASE_INFO));
   if (CVISI(CONTROL_CASE_STATS))
     Item_Control_Stats(CSCROL(CONTROL_CASE_STATS));
+#if ENABLED(DWIN_PLR_MENU)
+  if (CVISI(CONTROL_CASE_PLR))
+    Item_Control_PLR(CSCROL(CONTROL_CASE_PLR));
+#endif
   if (select_control.now && CVISI(select_control.now))
     Draw_Menu_Cursor(CSCROL(select_control.now));
 
@@ -2842,6 +2868,7 @@ void Popup_Window_Resume()
   }
 #endif
 }
+
 void Leveling_Error()
 {
   Clear_Main_Window();
@@ -6714,7 +6741,7 @@ void HMI_PauseOrStop()
           thermalManager.setTargetBed(0);
           thermalManager.zero_fan_speeds();
 
-          recovery.info.sd_printing_flag = false; // rock_20210820
+          TERN_(POWER_LOSS_RECOVERY, recovery.info.sd_printing_flag = false); // rock_20210820
           // rock_20210830 The following sentence is absolutely not required. It will perform two main interface operations.
           // dwin_abort_flag = true; //Reset feedrate, return to Home
           #ifdef ACTION_ON_CANCEL
@@ -6915,7 +6942,7 @@ void HMI_Filament()
       thermalManager.zero_fan_speeds();
 
       // Rock 20210820
-      recovery.info.sd_printing_flag = false;
+      TERN_(POWER_LOSS_RECOVERY, recovery.info.sd_printing_flag = false);
       // rock_20210830 The following sentence is absolutely not required, and the main interface operation will be performed twice.
       // Reset feedrate, return to Home
       // dwin_abort_flag = true;
@@ -8052,6 +8079,11 @@ void HMI_Control()
         case CONTROL_CASE_STATS: // Printer Statistics >
           Item_Control_Stats(MROWS);
           break;
+#if ENABLED(DWIN_PLR_MENU)
+        case CONTROL_CASE_PLR:
+          Item_Control_PLR(MROWS);
+          break;
+#endif
 
         default:
           break;
@@ -8135,6 +8167,11 @@ void HMI_Control()
   {
     switch (select_control.now)
     {
+#if ENABLED(DWIN_PLR_MENU)
+    case CONTROL_CASE_PLR:
+      Goto_PLRSettings();
+      break;
+#endif
     case 0: // Back
       select_page.set(2);
       Goto_MainMenu();
@@ -11242,7 +11279,7 @@ void DWIN_Update()
   if (!HMI_flag.disallow_recovery_flag)
   {
     // SD card print
-    if (recovery.info.sd_printing_flag)
+    if (TERN(POWER_LOSS_RECOVERY, recovery.info.sd_printing_flag, card.isPrinting()))
     {
       // Rock 20210814
       Remove_card_window_check();
@@ -11350,6 +11387,230 @@ void Remove_card_window_check(void)
   }
 }
 
+#if ENABLED(DWIN_PLR_MENU)
+  enum PLRMenuItem : uint8_t {
+    PLR_BACK, PLR_ENABLE, PLR_HEAT_BED, PLR_HEAT_NOZZLE, PLR_BED_EXTRA,
+    PLR_AUTO_TEMP, PLR_ZRAISE, PLR_PURGE, PLR_SAVE_STEP, PLR_SAVE
+  };
+  static select_t select_plr{0};
+  static uint8_t index_plr = MROWS, plr_edit_item = 0;
+  static int16_t plr_edit_value = 0;
+
+  static int16_t PLR_Menu_Value(const uint8_t item) {
+    switch (item) {
+      case PLR_BED_EXTRA: return plrSettings.bed_extra;
+      case PLR_AUTO_TEMP: return recovery.bed_temp_threshold;
+      case PLR_ZRAISE: return plrSettings.zraise_tenths;
+      case PLR_PURGE: return plrSettings.purge_tenths;
+      case PLR_SAVE_STEP: return plrSettings.save_z_hundredths;
+      default: return 0;
+    }
+  }
+
+  static int16_t PLR_Value_Max(const uint8_t item) {
+    switch (item) {
+      case PLR_BED_EXTRA: return 20;
+      case PLR_AUTO_TEMP: return BED_MAX_TARGET;
+      case PLR_ZRAISE: return 200; // 20.0 mm
+      case PLR_PURGE: return 500; // 50.0 mm
+      case PLR_SAVE_STEP: return 100; // 1.00 mm
+      default: return 0;
+    }
+  }
+
+  static void Draw_PLR_Value(const uint8_t item, const uint8_t row, const bool editing=false) {
+    const uint16_t bg = editing ? Select_Color : Color_Bg_Black;
+    const int16_t value = editing ? plr_edit_value : PLR_Menu_Value(item);
+    if (item == PLR_ENABLE || item == PLR_HEAT_BED || item == PLR_HEAT_NOZZLE) {
+      const bool on = item == PLR_ENABLE ? recovery.enabled : item == PLR_HEAT_BED ? plrSettings.heat_bed : plrSettings.heat_nozzle;
+      Draw_Chkb_Line(row, on);
+    }
+    else if (item == PLR_ZRAISE || item == PLR_PURGE || item == PLR_SAVE_STEP)
+      DWIN_Draw_FloatValue(true, true, 0, font8x16, Color_White, bg, 2,
+        item == PLR_SAVE_STEP ? 2 : 1, VALUERANGE_X, MBASE(row) + 3, value);
+    else if (item == PLR_BED_EXTRA || item == PLR_AUTO_TEMP)
+      DWIN_Draw_IntValue(true, true, 0, font8x16, Color_White, bg, 3, VALUERANGE_X, MBASE(row) + 3, value);
+  }
+
+  static void Draw_PLRSettings_Menu() {
+    static const char * const labels[] = {
+      "Back", "Enabled", "Heat bed on boot", "Heat nozzle on boot", "Bed extra C",
+      "Auto C (0=off)", "Z lift mm", "Purge mm", "Save Z step mm", "Store settings"
+    };
+    Clear_Main_Window();
+    Draw_Title(F("Power-loss recovery"));
+    const uint8_t first = index_plr - MROWS;
+    for (uint8_t item = first; item <= index_plr && item <= PLR_SAVE; ++item) {
+      const uint8_t row = item - first;
+      if (item == PLR_BACK)
+        Draw_Back_First(select_plr.now == PLR_BACK);
+      else {
+        Draw_Menu_Line(row, item == PLR_SAVE ? ICON_WriteEEPROM : ICON_Motion, labels[item]);
+        Draw_PLR_Value(item, row);
+      }
+    }
+    if (select_plr.now) Draw_Menu_Cursor(select_plr.now - first);
+  }
+
+  static void Goto_PLRSettings() {
+    checkkey = PowerLossSettings;
+    select_plr.reset();
+    index_plr = MROWS;
+    EncoderRate.enabled = false;
+    HMI_flag.Refresh_bottom_flag = false;
+    Draw_PLRSettings_Menu();
+  }
+
+  static void HMI_PLRSettings() {
+    const ENCODER_DiffState state = get_encoder_state();
+    if (state == ENCODER_DIFF_NO) return;
+    if (state == ENCODER_DIFF_CW || state == ENCODER_DIFF_CCW) {
+      const bool changed = state == ENCODER_DIFF_CW ? select_plr.inc(PLR_SAVE + 1) : select_plr.dec();
+      if (changed) {
+        if (select_plr.now > index_plr || select_plr.now < index_plr - MROWS) {
+          index_plr = select_plr.now > index_plr ? select_plr.now : select_plr.now + MROWS;
+          Draw_PLRSettings_Menu();
+        }
+        else
+          Move_Highlight(state == ENCODER_DIFF_CW ? 1 : -1, select_plr.now + MROWS - index_plr);
+      }
+    }
+    else if (state == ENCODER_DIFF_ENTER) {
+      const uint8_t item = select_plr.now;
+      switch (item) {
+        case PLR_BACK:
+          checkkey = Control;
+          select_control.set(CONTROL_CASE_PLR);
+          index_control = _MAX(uint8_t(MROWS), uint8_t(CONTROL_CASE_PLR));
+          Draw_Control_Menu();
+          break;
+        case PLR_ENABLE:
+          recovery.enable(!recovery.enabled);
+          Draw_PLR_Value(item, item + MROWS - index_plr);
+          break;
+        case PLR_HEAT_BED:
+          plrSettings.heat_bed = !plrSettings.heat_bed;
+          Draw_PLR_Value(item, item + MROWS - index_plr);
+          break;
+        case PLR_HEAT_NOZZLE:
+          plrSettings.heat_nozzle = !plrSettings.heat_nozzle;
+          Draw_PLR_Value(item, item + MROWS - index_plr);
+          break;
+        case PLR_SAVE:
+          HMI_AudioFeedback(settings.save());
+          break;
+        default:
+          plr_edit_item = item;
+          plr_edit_value = PLR_Menu_Value(item);
+          checkkey = PowerLossValue;
+          EncoderRate.enabled = true;
+          Draw_PLR_Value(item, item + MROWS - index_plr, true);
+          break;
+      }
+    }
+    DWIN_UpdateLCD();
+  }
+
+  static void HMI_PLRValue() {
+    const ENCODER_DiffState state = Encoder_ReceiveAnalyze();
+    if (state == ENCODER_DIFF_NO) return;
+    // Acceleration is bounded before applying it to the scaled integer value.
+    if (state == ENCODER_DIFF_CW || state == ENCODER_DIFF_CCW) {
+      const int32_t step = constrain(EncoderRate.encoderMoveValue, 1, 100);
+      const int32_t next = int32_t(plr_edit_value) + (state == ENCODER_DIFF_CW ? step : -step);
+      plr_edit_value = constrain(next, plr_edit_item == PLR_SAVE_STEP ? 1 : 0, PLR_Value_Max(plr_edit_item));
+    }
+    else if (state == ENCODER_DIFF_ENTER) {
+      switch (plr_edit_item) {
+        case PLR_BED_EXTRA: plrSettings.bed_extra = plr_edit_value; break;
+        case PLR_AUTO_TEMP: recovery.bed_temp_threshold = plr_edit_value; break;
+        case PLR_ZRAISE: plrSettings.zraise_tenths = plr_edit_value; break;
+        case PLR_PURGE: plrSettings.purge_tenths = plr_edit_value; break;
+        case PLR_SAVE_STEP: plrSettings.save_z_hundredths = plr_edit_value; break;
+      }
+      EncoderRate.enabled = false;
+      checkkey = PowerLossSettings;
+    }
+    Draw_PLR_Value(plr_edit_item, plr_edit_item + MROWS - index_plr, checkkey == PowerLossValue);
+    DWIN_UpdateLCD();
+  }
+#endif
+
+#if ENABLED(POWER_LOSS_RECOVERY)
+  static void Draw_PLR_Selection(const bool resume) {
+    HMI_flag.select_flag = resume;
+    const uint16_t cancel_color = resume ? Color_Bg_Window : Select_Color,
+                   resume_color = resume ? Select_Color : Color_Bg_Window;
+    #if ENABLED(DWIN_CREALITY_480_LCD)
+      DWIN_Draw_Rectangle(0, cancel_color, 25, 306, 126, 345);
+      DWIN_Draw_Rectangle(0, cancel_color, 24, 305, 127, 346);
+      DWIN_Draw_Rectangle(0, resume_color, 145, 306, 246, 345);
+      DWIN_Draw_Rectangle(0, resume_color, 144, 305, 247, 346);
+    #elif ENABLED(DWIN_CREALITY_320_LCD)
+      DWIN_Draw_Rectangle(0, cancel_color, 25, 195, 108, 226);
+      DWIN_Draw_Rectangle(0, cancel_color, 24, 194, 109, 227);
+      DWIN_Draw_Rectangle(0, resume_color, 132, 195, 214, 226);
+      DWIN_Draw_Rectangle(0, resume_color, 131, 194, 215, 227);
+    #endif
+  }
+
+  static void Goto_PowerLossRecovery() {
+    recovery.ui_flag_resume = false;
+    checkkey = PowerLossResume;
+    EncoderRate.enabled = false;
+    HMI_flag.Refresh_bottom_flag = false;
+    Popup_Window_Resume();
+    Draw_PLR_Selection(true);
+
+    // Resolve the saved absolute path, including files in nested folders.
+    MediaFile *dir = nullptr;
+    const char *name = card.diveToFile(true, dir, recovery.info.sd_filename);
+    if (name) {
+      card.selectFileByName(name);
+      name = card.longest_filename();
+    }
+    else
+      name = recovery.info.sd_filename;
+    char label[MENU_CHAR_LIMIT + 1];
+    strncpy(label, name, MENU_CHAR_LIMIT);
+    label[MENU_CHAR_LIMIT] = '\0';
+    const uint16_t x = (DWIN_WIDTH - strlen(label) * MENU_CHR_W) / 2;
+    DWIN_Draw_String(false, true, font8x16, Popup_Text_Color, Color_Bg_Window, x,
+      TERN(DWIN_CREALITY_480_LCD, 252, 152), label);
+    DWIN_UpdateLCD();
+  }
+
+  static void HMI_PowerLossRecovery() {
+    const ENCODER_DiffState state = get_encoder_state();
+    if (state == ENCODER_DIFF_NO) return;
+    if (state == ENCODER_DIFF_ENTER) {
+      if (!HMI_flag.select_flag) {
+        recovery.cancel();
+        select_page.reset();
+        Goto_MainMenu();
+      }
+      else if (card.isMounted() && recovery.valid()) {
+        queue.inject(F("M1000"));
+        DWIN_PowerLossResume();
+      }
+    }
+    else
+      Draw_PLR_Selection(state == ENCODER_DIFF_CW);
+    DWIN_UpdateLCD();
+  }
+
+  void DWIN_PowerLossResume() {
+    recovery.ui_flag_resume = false;
+    hasThumbnail = false;
+    dwin_abort_flag = false;
+    HMI_flag.done_confirm_flag = HMI_flag.print_finish = false;
+    HMI_flag.disallow_recovery_flag = false;
+    select_print.reset();
+    HMI_ValueStruct.show_mode = 0;
+    if (checkkey != PrintProcess) Goto_PrintProcess();
+  }
+#endif
+
 void EachMomentUpdate()
 {
   TERN_(PREHEAT_ALERT, Preheat_alert());
@@ -11357,9 +11618,6 @@ void EachMomentUpdate()
   static uint8_t heat_index = BG_NOZZLE_MIN, bed_heat_index = BG_BED_MIN;
   static millis_t next_var_update_ms = 0, next_rts_update_ms = 0, next_heat_flash_ms = 0, next_heat_bed_flash_ms = 0, next_high_ms = 0, next_move_file_name_ms = 0;
   const millis_t ms = millis();
-  char *fileName = TERN(POWER_LOSS_RECOVERY, recovery.info.sd_filename, "");
-
-  PrintFile_InfoTypeDef fileInfo = {0};
   if (ELAPSED(ms, next_var_update_ms))
   {
     next_var_update_ms = ms + DWIN_VAR_UPDATE_INTERVAL;
@@ -11726,77 +11984,8 @@ void EachMomentUpdate()
     Goto_MainMenu(); // Rock 20210831
   }
 #if ENABLED(POWER_LOSS_RECOVERY)
-  else if (DWIN_lcd_sd_status && recovery.dwin_flag)
-  { // resume print before power off
-    static bool recovery_flag = false;
-    recovery.dwin_flag = false;
-    recovery_flag = true;
-    auto update_selection = [&](const bool sel)
-    {
-      HMI_flag.select_flag = sel;
-      const uint16_t c1 = sel ? Color_Bg_Window : Select_Color;
-      const uint16_t c2 = sel ? Select_Color : Color_Bg_Window;
-#if ENABLED(DWIN_CREALITY_480_LCD)
-      DWIN_Draw_Rectangle(0, c1, 25, 306, 126, 345);
-      DWIN_Draw_Rectangle(0, c1, 24, 305, 127, 346);
-      DWIN_Draw_Rectangle(0, c2, 145, 306, 246, 345);
-      DWIN_Draw_Rectangle(0, c2, 144, 305, 247, 346);
-#elif ENABLED(DWIN_CREALITY_320_LCD)
-      DWIN_Draw_Rectangle(0, c1, 25, 195, 108, 226);
-      DWIN_Draw_Rectangle(0, c1, 24, 194, 109, 227);
-      DWIN_Draw_Rectangle(0, c2, 132, 195, 214, 226);
-      DWIN_Draw_Rectangle(0, c2, 131, 194, 215, 227);
-#endif
-    };
-    // BL24CXX::EEPROM_Reset(PLR_ADDR, (uint8_t*)&recovery.info, sizeof(recovery.info));  //rock_20210812  清空 EEPROM
-    Popup_Window_Resume();
-    update_selection(true);
-    get_file_info(&fileName[1], &fileInfo);
-    // TODO: Get the name of the current file from someplace
-    //
-    //(void)recovery.interrupted_file_exists();
-    // char *const name = card.longest_filename();
-    // const int8_t npos = _MAX(0U, DWIN_WIDTH -strlen(name) *(MENU_CHR_W)) /2;
-    // DWIN_Draw_String(false, true, font8x16, Popup_Text_Color, Color_Bg_Window, npos, 252, name);
-    const int8_t npos = _MAX(0U, DWIN_WIDTH - strlen(fileInfo.longfilename) * (MENU_CHR_W)) / 2;
-#if ENABLED(DWIN_CREALITY_480_LCD)
-    DWIN_Draw_String(false, true, font8x16, Popup_Text_Color, Color_Bg_Window, npos, 252, fileInfo.longfilename);
-#elif ENABLED(DWIN_CREALITY_320_LCD)
-    DWIN_Draw_String(false, true, font8x16, Popup_Text_Color, Color_Bg_Window, npos, 152, fileInfo.longfilename);
-#endif
-    DWIN_UpdateLCD();
-
-    while (recovery_flag)
-    {
-      ENCODER_DiffState encoder_diffState = Encoder_ReceiveAnalyze();
-      if (encoder_diffState != ENCODER_DIFF_NO)
-      {
-        if (encoder_diffState == ENCODER_DIFF_ENTER)
-        {
-          recovery_flag = false;
-          if (HMI_flag.select_flag)
-            break;
-          TERN_(POWER_LOSS_RECOVERY, queue.inject_P(PSTR("M1000C")));
-          HMI_StartFrame(true);
-          return;
-        }
-        else
-        {
-          update_selection(encoder_diffState == ENCODER_DIFF_CW);
-        }
-        DWIN_UpdateLCD();
-      }
-      // HAL_watchdog_refresh();
-      hal.watchdog_refresh();
-    }
-    select_print.set(0);
-    HMI_ValueStruct.show_mode = 0;
-    queue.inject_P(PSTR("M1000"));
-    Goto_PrintProcess();
-    Draw_Mid_Status_Area(true); // rock_20230529
-    // tuqiang delete for power continue long filename
-    // DWIN_Draw_String(false, false, font8x16, Color_White, Color_Bg_Black, npos, 60, fileInfo.longfilename);
-  }
+  else if (DWIN_lcd_sd_status && recovery.ui_flag_resume)
+    Goto_PowerLossRecovery();
 #endif
   if (HMI_flag.Pressure_Height_end) // Complete high level with one click
   {
@@ -11877,7 +12066,7 @@ void Show_G_Pic(void)
         HMI_flag.print_finish = false;
         HMI_ValueStruct.show_mode = 0;
         // Rock 20210819
-        recovery.info.sd_printing_flag = true;
+        TERN_(POWER_LOSS_RECOVERY, recovery.info.sd_printing_flag = true);
 
         card.openAndPrintFile(my_short_fn);
 
@@ -12128,6 +12317,19 @@ void DWIN_HandleScreen()
   case Control:
     HMI_Control();
     break;
+#if ENABLED(POWER_LOSS_RECOVERY)
+  case PowerLossResume:
+    HMI_PowerLossRecovery();
+    break;
+#endif
+#if ENABLED(DWIN_PLR_MENU)
+  case PowerLossSettings:
+    HMI_PLRSettings();
+    break;
+  case PowerLossValue:
+    HMI_PLRValue();
+    break;
+#endif
 #if ENABLED(BED_LEVEL_VISUALIZER)
   case BedLevelView:
     HMI_BedLevelVisualizer();
@@ -12781,6 +12983,13 @@ void HMI_Auto_Bed_PID(void)
       card.cdroot();  // selectNewestFile() moved workDir; restore it for SD browsing
       return;
     }
+
+    #if ENABLED(POWER_LOSS_RECOVERY)
+      if (recovery.ui_flag_resume || checkkey == PowerLossResume) {
+        card.cdroot();
+        return;
+      }
+    #endif
 
     const bool ui_idle = (checkkey == MainMenu || checkkey == SelectFile);
     if (!ui_idle || marlin.printingIsActive() || marlin.printingIsPaused()) {

@@ -1958,6 +1958,9 @@
 
 // Power-Loss Recovery
 #if ENABLED(POWER_LOSS_RECOVERY)
+  #if ENABLED(DWIN_PLR_MENU) && !defined(PLR_BED_THRESHOLD)
+    #define PLR_BED_THRESHOLD 0
+  #endif
   #ifdef PLR_BED_THRESHOLD
     #define HAS_PLR_BED_THRESHOLD 1
   #endif

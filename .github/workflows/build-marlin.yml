@@ -21,6 +21,10 @@ on:
         description: "ONE_CLICK_PRINT (SD card only; keep off for OctoPrint)"
         type: boolean
         default: true
+      power_loss_recovery:
+        description: "POWER_LOSS_RECOVERY + DWIN_PLR_MENU (SD recovery and advanced LCD menu; uses memory)"
+        type: boolean
+        default: false
       d_routine_auto_offset:
         description: "D_ROUTINE_AUTO_OFFSET (Z offset, Delta pattern)"
         type: boolean
@@ -96,6 +100,8 @@ jobs:
       - name: Apply firmware options
         run: |
           python .github/scripts/apply_marlin_options.py \
+            POWER_LOSS_RECOVERY=${{ inputs.power_loss_recovery }} \
+            DWIN_PLR_MENU=${{ inputs.power_loss_recovery }} \
             DWIN_RENDER_THUMBNAIL=${{ inputs.dwin_render_thumbnail }} \
             ONE_CLICK_PRINT=${{ inputs.one_click_print }} \
             D_ROUTINE_AUTO_OFFSET=${{ inputs.d_routine_auto_offset }} \

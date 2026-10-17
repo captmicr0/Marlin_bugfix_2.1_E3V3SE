@@ -16,6 +16,7 @@
     "Marlin/src/gcode/calibrate/G28.cpp",
     "Marlin/src/gcode/control/M17_M18_M84.cpp",
     "Marlin/src/gcode/feature/pause/M600.cpp",
+    "Marlin/src/gcode/feature/powerloss/M1000.cpp",
     "Marlin/src/gcode/gcode.cpp",
     "Marlin/src/gcode/gcode.h",
     "Marlin/src/gcode/lcd/M117.cpp",
@@ -23,6 +24,7 @@
     "Marlin/src/gcode/lcd/M256.cpp",
     "Marlin/src/gcode/lcd/M73.cpp",
     "Marlin/src/inc/Conditionals-2-LCD.h",
+    "Marlin/src/inc/Conditionals-4-adv.h",
     "Marlin/src/inc/SanityCheck.h",
     "Marlin/src/inc/Version.h",
     "Marlin/src/lcd/buttons.h",
@@ -34,9 +36,11 @@
     "Marlin/src/lcd/marlinui.cpp",
     "Marlin/src/lcd/marlinui.h",
     "Marlin/src/lcd/utf8.cpp",
+    "Marlin/src/module/ft_motion.cpp",
     "Marlin/src/module/motion.cpp",
     "Marlin/src/module/probe.h",
     "Marlin/src/module/settings.cpp",
+    "Marlin/src/module/stepper.cpp",
     "Marlin/src/module/temperature.cpp",
     "Marlin/src/module/temperature.h",
     "Marlin/src/pins/pins.h",
@@ -53,8 +57,8 @@
       "ram": 29224
     },
     "STM32F401RE_creality": {
-      "flash": 235880,
-      "ram": 29316
+      "flash": 226640,
+      "ram": 28388
     }
   }
 }
