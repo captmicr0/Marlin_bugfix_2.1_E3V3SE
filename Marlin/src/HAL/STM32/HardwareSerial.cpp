@@ -150,6 +150,8 @@ HAL_HardwareSerial::HAL_HardwareSerial(void *peripheral) {
       RX_DMA = { USART2, 1, DMA1_Channel6 };
     #endif
   }
+
+  #ifdef USART3
   else if (peripheral == USART3) {
     setRx(PIN_SERIAL3_RX);
     setTx(PIN_SERIAL3_TX);
@@ -161,6 +163,7 @@ HAL_HardwareSerial::HAL_HardwareSerial(void *peripheral) {
       RX_DMA = { USART3, 1, DMA1_Channel3 };
     #endif
   }
+  #endif
 
   #ifdef USART4 // Only F2 / F4 / F7
     else if (peripheral == USART4) {
